@@ -1,0 +1,13 @@
+# Fit-section fragment: merge into a complete [fit] configuration (not a
+# standalone analysis). No e-mu trigger SF is supplied by jsonpog Summer22.
+# Zero size is an explicit unresolved placeholder, not a measured uncertainty.
+# Supply a measured size before interpreting an uncertainty or fit result.
+# Exclude the flat weight templates to avoid double-counting this nuisance.
+[fit]
+histosys_exclude = ["trigger_emu"]
+
+[[fit.normsys]]
+name = "trigger_emu"
+size = 0.0
+samples = ["all"]
+placeholder = true

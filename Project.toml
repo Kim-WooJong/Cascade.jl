@@ -1,0 +1,32 @@
+name = "Cascade"
+uuid = "806a688f-becd-424f-94d0-6026a0daa481"
+authors = ["Kim-WooJong <78694218+Kim-WooJong@users.noreply.github.com>"]
+version = "0.1.0"
+
+[deps]
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+ROOTPlots = "ac0f0d6f-e18a-4015-835e-9978869e88bb"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+UnROOT = "3cd96dde-e98d-4713-81e9-a4a1b0235ce9"
+
+[compat]
+ForwardDiff = "1"
+ROOTPlots = "0.2.2"
+SpecialFunctions = "2"
+UnROOT = "0.11.11"
+julia = "1.11"
+
+[sources]
+ROOTPlots = {url = "https://github.com/Kim-WooJong/ROOTPlots.jl", rev = "v0.2.2"}
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

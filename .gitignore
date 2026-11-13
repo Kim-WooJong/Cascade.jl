@@ -1,0 +1,23 @@
+# Package environments are resolved per validation/runtime environment.
+Manifest.toml
+
+# Analysis products and local investigation records (keep source/tests in Git).
+out/
+/cascade_out/
+/artifacts/
+/reports/
+/.project/
+# Raw inputs are external; intentionally versioned fixtures need explicit review.
+*.root
+
+# Local credentials/configuration must never be staged.
+/.env
+/.env.*
+!/.env.example
+
+# Python tooling and platform/editor caches.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+*~

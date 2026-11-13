@@ -1,0 +1,99 @@
+# Synthetic end-to-end demonstration of the fit and plot steps (no physics content).
+# Two simulated processes with known truth and pseudo-data generated with the signal
+# scaled by mu = 1.2 (examples/fit_demo/lib/write_fit_demo_inputs.jl). Inputs are
+# written to analyses/fit_demo/inputs by examples/fit_demo/make_inputs.jl (not part
+# of the repository). Run: bin/cascade.jl run analyses/fit_demo/analysis.toml
+
+[analysis]
+name = "fit_demo"
+lumi_pb = 1000.0
+workdir = "cascade_out/fit_demo"
+
+[paths]
+inputs = "inputs"
+
+[merge]
+yield_variable = "njet"
+
+[[samples]]
+name = "signal_mc"
+kind = "mc"
+group = "signal"
+xsec_pb = 10.0
+format = "cols"
+files = ["${inputs}/signal_mc/*.cols"]
+
+[[samples]]
+name = "background_mc"
+kind = "mc"
+group = "background"
+xsec_pb = 20.0
+format = "cols"
+files = ["${inputs}/background_mc/*.cols"]
+
+[[samples]]
+name = "pseudodata"
+kind = "data"
+format = "cols"
+files = ["${inputs}/pseudodata/*.cols"]
+
+[variables]
+njet = "nJet"
+
+[weights]
+mc = ["genWeight"]
+data = []
+# Illustrative shape variation (weight type): migrates events between jet multiplicities.
+variations = [{ name = "jes", up = "1.0 + 0.04 * (nJet - 2.0)", down = "1.0 - 0.04 * (nJet - 2.0)" }]
+
+[[cuts]]
+name = "mass_cut"
+expr = "mass > 20.0"
+
+[[cuts]]
+name = "njet_ge1"
+expr = "nJet >= 1"
+
+[[regions]]
+name = "inclusive"
+after = "mass_cut"
+
+[[regions]]
+name = "ge1j"
+after = "njet_ge1"
+
+[[histograms]]
+name = "njet"
+range = [-0.5, 1.0, 8.5]
+values = ["njet"]
+xlabel = "Number of jets"
+
+[[histograms]]
+name = "mass"
+range = [20.0, 10.0, 200.0]
+values = ["mass"]
+xlabel = "m (GeV)"
+
+[fit]
+poi = "mu_signal"
+signal = ["signal"]
+channels = [{ region = "inclusive", variable = "njet" }]
+upper_limit = true
+significance = true
+
+[[fit.normsys]]
+name = "lumi"
+size = 0.025
+samples = ["all"]
+
+[[fit.normsys]]
+name = "xsec_background"
+size = 0.05
+samples = ["background"]
+placeholder = true
+
+[plot]
+logy = ["mass"]
+labels = { signal = "Signal", background = "Background" }
+region_labels = { inclusive = "Inclusive", ge1j = "#geq1 jet" }
+extra = "Simulation Preliminary"

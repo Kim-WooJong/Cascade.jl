@@ -1,0 +1,14 @@
+{
+  "source_slices": [
+    "io.jl readtype/Preamble/skiptobj/endcheck",
+    "streamers.jl _versioned_streamer/stream!",
+    "bootstrap.jl TNamed/TAttLine/TAttFill/TAttMarker"
+  ],
+  "sha256": {
+    "io.jl": "48a8183796f8fe158563e5fb2a18508a94b2fec2bb6c3dd64375413abcf9f54c",
+    "streamers.jl": "7f3e78237019c7fa8f070d3286368cc97acbbf98c08584494b9d917c740894cf",
+    "bootstrap.jl": "5fc968ff9b33d3ae2ab431f69b3c615cc0f44231b1ba6c02c23611d21c6afd2f",
+    "constants.jl": "525690baedf2b7a4131e140e35bb24ff6cb5251c032ed1f6b69e7d586ec4d358"
+  },
+  "not_native_ROOT": "synthetic IOBuffer envelope using exact source primitives; datastream codec not executed"
+}

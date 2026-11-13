@@ -1,0 +1,42 @@
+{
+  "schema_version": 2,
+  "description": "Synthetic jet energy scale uncertainty, resolution and resolution scale factors for the shape_test analysis (not physics values).",
+  "corrections": [
+    {
+      "name": "Test_JES_Total",
+      "version": 1,
+      "inputs": [{"name": "JetEta", "type": "real"}, {"name": "JetPt", "type": "real"}],
+      "output": {"name": "unc", "type": "real"},
+      "data": {
+        "nodetype": "binning", "input": "JetEta", "edges": [-5.0, 0.0, 5.0], "flow": "clamp",
+        "content": [
+          {"nodetype": "formula", "expression": "0.01+0.5/x", "parser": "TFormula", "variables": ["JetPt"]},
+          {"nodetype": "binning", "input": "JetPt", "edges": [10.0, 50.0, 100.0, 7000.0], "flow": "clamp",
+           "content": [0.04, 0.025, 0.015]}
+        ]
+      }
+    },
+    {
+      "name": "Test_PtResolution",
+      "version": 1,
+      "inputs": [{"name": "JetEta", "type": "real"}, {"name": "JetPt", "type": "real"}, {"name": "Rho", "type": "real"}],
+      "output": {"name": "jer", "type": "real"},
+      "data": {"nodetype": "formula", "expression": "0.04+0.9/sqrt(x)+0.002*y", "parser": "TFormula",
+               "variables": ["JetPt", "Rho"]}
+    },
+    {
+      "name": "Test_ScaleFactor",
+      "version": 1,
+      "inputs": [{"name": "JetEta", "type": "real"}, {"name": "JetPt", "type": "real"}, {"name": "systematic", "type": "string"}],
+      "output": {"name": "sf", "type": "real"},
+      "data": {
+        "nodetype": "category", "input": "systematic",
+        "content": [
+          {"key": "nom", "value": {"nodetype": "binning", "input": "JetEta", "edges": [-5.0, -1.5, 1.5, 5.0], "flow": "clamp", "content": [1.15, 1.1, 1.15]}},
+          {"key": "up", "value": {"nodetype": "binning", "input": "JetEta", "edges": [-5.0, -1.5, 1.5, 5.0], "flow": "clamp", "content": [1.25, 1.2, 1.25]}},
+          {"key": "down", "value": {"nodetype": "binning", "input": "JetEta", "edges": [-5.0, -1.5, 1.5, 5.0], "flow": "clamp", "content": [1.05, 1.0, 1.05]}}
+        ]
+      }
+    }
+  ]
+}

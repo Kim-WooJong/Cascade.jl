@@ -1,0 +1,106 @@
+# Plotting inputs for the prior ttbar e-mu control analysis outputs
+# (gate: ~/analisis/ttbar_ctrl/out_slim, out_data, out_cutflow; Run2022C, no corrections).
+# Cross sections are the approximate values used by the prior analysis
+# (julia/scripts/plot_common.jl), not validated: sigma = value * br [pb].
+lumi_pb = 1210.0
+lumi_label = "1.21 fb^{-1}"
+energy = "13.6 TeV"
+annotation = "e#mu, #geq1 jet"
+
+[xsec_pb]
+TTto2L2Nu = { value = 924.0, br = 0.1061 }
+TTtoLNu2Q = { value = 924.0, br = 0.4393 }
+TWminusto2L2Nu = { value = 43.95, br = 0.1061 }
+TbarWplusto2L2Nu = { value = 43.95, br = 0.1061 }
+DYto2L_MLL50 = { value = 6346.0, br = 1.0 }
+DYto2L_MLL10to50 = { value = 19982.0, br = 1.0 }
+WWto2L2Nu = { value = 125.8, br = 0.1061 }
+WZto3LNu = { value = 4.92, br = 1.0 }
+WZto2L2Q = { value = 3.5, br = 1.0 }
+
+[plotting]
+data = ["MuonEG", "SingleMuon", "Muon", "EGamma"]
+
+[[plotting.groups]]   # bottom of the stack first
+label = "Z + jets"
+color = "#1F77B4"
+samples = ["DYto2L_MLL50", "DYto2L_MLL10to50"]
+
+[[plotting.groups]]
+label = "Diboson"
+color = "#9467BD"
+samples = ["WWto2L2Nu", "WZto3LNu", "WZto2L2Q"]
+
+[[plotting.groups]]
+label = "Single t"
+color = "#E377C2"
+samples = ["TWminusto2L2Nu", "TbarWplusto2L2Nu"]
+
+[[plotting.groups]]
+label = "t#bar{t}"
+color = "#C5001A"
+samples = ["TTto2L2Nu", "TTtoLNu2Q"]
+
+[[variables]]
+name = "lep_pt"
+xlabel = "Lepton p_{T} (GeV)"
+ylabel = "Events / 10 GeV"
+logy = true
+[[variables]]
+name = "lep_eta"
+xlabel = "Lepton #eta"
+ylabel = "Events / 0.24"
+logy = false
+[[variables]]
+name = "jet1_pt"
+xlabel = "Leading jet p_{T} (GeV)"
+ylabel = "Events / 20 GeV"
+logy = true
+[[variables]]
+name = "jet2_pt"
+xlabel = "Subleading jet p_{T} (GeV)"
+ylabel = "Events / 20 GeV"
+logy = true
+[[variables]]
+name = "jet3_pt"
+xlabel = "Third jet p_{T} (GeV)"
+ylabel = "Events / 20 GeV"
+logy = true
+[[variables]]
+name = "jet1_eta"
+xlabel = "Leading jet #eta"
+ylabel = "Events / 0.25"
+logy = false
+[[variables]]
+name = "mll"
+xlabel = "m_{ll} (GeV)"
+ylabel = "Events / 20 GeV"
+logy = true
+[[variables]]
+name = "njet"
+xlabel = "Number of jets"
+ylabel = "Events"
+logy = false
+
+# ILLUSTRATIVE normalisation variations only, to exercise the band machinery on
+# real histograms. They are NOT the systematic model of the analysis.
+[[illustrative_norm]]
+name = "lumi"
+size = 0.014
+samples = ["TTto2L2Nu", "TTtoLNu2Q", "TWminusto2L2Nu", "TbarWplusto2L2Nu", "DYto2L_MLL50", "DYto2L_MLL10to50", "WWto2L2Nu", "WZto3LNu", "WZto2L2Q"]
+[[illustrative_norm]]
+name = "xsec_ttbar"
+size = 0.05
+samples = ["TTto2L2Nu", "TTtoLNu2Q"]
+[[illustrative_norm]]
+name = "xsec_singletop"
+size = 0.10
+samples = ["TWminusto2L2Nu", "TbarWplusto2L2Nu"]
+[[illustrative_norm]]
+name = "xsec_diboson"
+size = 0.10
+samples = ["WWto2L2Nu", "WZto3LNu", "WZto2L2Q"]
+[[illustrative_norm]]
+name = "norm_dy"
+size = 0.30
+samples = ["DYto2L_MLL50", "DYto2L_MLL10to50"]

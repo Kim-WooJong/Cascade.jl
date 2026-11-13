@@ -1,0 +1,44 @@
+# Proposed [fit] / [plot] sections for analyses/ttbar_emu/analysis.toml (append to it).
+# Simple ttbar normalisation fit: POI mu_ttbar scales the ttbar group (TTto2L2Nu, TTtoLNu2Q)
+# in the e-mu >= 1 jet region, fitted on the jet multiplicity with MC statistics
+# (Barlow-Beeston lite). PLACEHOLDER uncertainties: the luminosity (1.4%) and the
+# group cross-section uncertainties below are assumed values for a technical
+# demonstration only; they are not the systematic model of the analysis.
+
+[fit]
+poi = "mu_ttbar"
+signal = ["ttbar"]
+channels = [{ region = "emu_ge1j", variable = "njet" }]
+impacts = true
+profile_interval = true
+
+[[fit.normsys]]
+name = "lumi"
+size = 0.014
+samples = ["all"]
+placeholder = true
+
+[[fit.normsys]]
+name = "xsec_single_top"
+size = 0.10
+samples = ["single_top"]
+placeholder = true
+
+[[fit.normsys]]
+name = "xsec_diboson"
+size = 0.10
+samples = ["diboson"]
+placeholder = true
+
+[[fit.normsys]]
+name = "xsec_zjets"
+size = 0.20
+samples = ["zjets"]
+placeholder = true
+
+[plot]
+lumi_label = "1.21 fb^{-1}"
+logy = ["lep_pt", "jet1_pt", "jet2_pt", "jet3_pt", "mll"]
+labels = { ttbar = "t#bar{t}", single_top = "Single t", diboson = "Diboson", zjets = "Z + jets" }
+colors = { ttbar = "#C5001A", single_top = "#E377C2", diboson = "#9467BD", zjets = "#1F77B4" }
+region_labels = { emu_ge1j = "e#mu, #geq1 jet", emu_ge2j = "e#mu, #geq2 jets" }

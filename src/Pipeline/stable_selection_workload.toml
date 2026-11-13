@@ -1,0 +1,40 @@
+# Generation-only training spec for execution.stable_selection_kernels
+# (src/Pipeline/stable_selection_workload.jl). Bounded and source-tracked: the image build
+# include_dependency's this file and the analysis below. Element types are the NanoAOD v12
+# branch types observed for these columns in the R7 fresh trace (KernelContext specTypes of
+# advance_selection!/_event_loop_recording!), not values or results. Columns the selection
+# needs but this schema lacks make the build fail (no guessing).
+
+analysis = "analyses/ttbar_emu/analysis.toml"   # package-root relative; only TOML is read
+
+[flat]
+run = "UInt32"
+luminosityBlock = "UInt32"
+genWeight = "Float32"
+HLT_IsoMu24 = "Bool"
+HLT_Ele32_WPTight_Gsf = "Bool"
+HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL = "Bool"
+HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ = "Bool"
+
+[jagged]
+Electron_charge = "Int32"
+Electron_cutBased = "UInt8"
+Electron_deltaEtaSC = "Float32"
+Electron_eta = "Float32"
+Electron_phi = "Float32"
+Electron_pt = "Float32"
+Muon_charge = "Int32"
+Muon_eta = "Float32"
+Muon_pfRelIso04_all = "Float32"
+Muon_phi = "Float32"
+Muon_pt = "Float32"
+Muon_tightId = "Bool"
+Jet_eta = "Float32"
+Jet_jetId = "UInt8"
+Jet_phi = "Float32"
+Jet_pt = "Float32"
+
+# Generation-only reusable-decoder coverage (R16 first-TT trace). Branch element types are
+# the [flat]/[jagged] schema above; counter_eltype is the NanoAOD v12 nX counter type.
+[reusable_decode]
+counter_eltype = "Int32"

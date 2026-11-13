@@ -1,0 +1,210 @@
+# Cascade analysis template. Copy or use: cascade init my_analysis
+# Paths resolve relative to this file. See docs/CONFIG.md for all keys.
+[analysis]
+name = "my_analysis"
+lumi_pb = 1000.0                   # Integrated luminosity in pb^-1 (MC required).
+workdir = "cascade_out/my_analysis" # Profiles get a subdirectory automatically.
+
+[options]
+default_profile = "baseline"       # CLI --profile overrides this name.
+corrections = true                  # true, false, or list of enabled nuisance names.
+shape_variations = true             # true, false, or list of variation names.
+fit = false                        # Switch off a configured fit.
+# jer_nominal = false               # Override nominal on all enabled JER entries.
+
+[profiles.baseline]                 # Overlay: tables deep merge, arrays REPLACE.
+[profiles.calibrated.options]
+corrections = true
+fit = true
+
+[paths]
+input = "."                        # ${input} substitution in file patterns/payloads.
+# jsonpog = "/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG"
+# certification = "${ENV:CASCADE_GOLDEN_JSON}" # Explicit optional env binding; no shell expansion.
+
+[[samples]]
+name = "signal"
+kind = "mc"                       # mc or data.
+files = ["${input}/*.root"]        # Globs; no inputs are opened by cascade check.
+format = "nanoaod"                 # Or cols, or a registered source format.
+xsec_pb = 1.0                       # Effective cross section = xsec_pb * branching_ratio.
+branching_ratio = 1.0
+group = "signal"                   # Group for fit/plots; default sample name.
+# stream = "Muon"                  # Data trigger stream; leave empty without triggers.
+# [samples.source]                  # Optional built-in reader overrides.
+# tree = "Events"
+# runs_tree = "Runs"
+# gen_sumw = "genEventSumw"         # NanoAOD normalization branch (not event weight).
+# gen_weight = "genWeight"          # cols only: used if meta gen_weight_sum absent.
+
+# Optional declarations; values are not independently certified by the audit.
+# [samples.metadata]
+# dataset = "/Primary/Processed/NANOAODSIM"
+# era = "2022"
+# campaign = "Summer22"
+# xsec_source = "reference identifier or URL"
+# xsec_note = "inclusive cross section; branching_ratio is separate"
+# branching_ratio_source = "reference identifier"
+# provenance = "input production description"
+# [samples.audit]
+# expected_nfiles = 2
+# expected_nevents = 123456
+# expected_sumw = -1200.5            # Signed sum, not absolute weights.
+# sumw_rtol = 1e-8
+# sumw_atol = 0.0
+# expected_files = ["${input}/a.root", "${input}/b.root"] # Literal paths, no globs.
+# inventory_source = "catalog identifier/version"
+# Run: cascade audit analysis.toml --workdir audit_run
+
+# [data_quality]
+# run_range = [1, 999999]
+# golden_json = "certification.json"
+# golden_json = "${certification}" # Alternatively bind a portable external path above.
+# run_branch = "run"
+# lumi_branch = "luminosityBlock"
+# [luminosity]                      # See docs/LUMINOSITY.md before enabling.
+# mode = "configured"               # Default: use analysis.lumi_pb; subset exposure unknown.
+# mode = "certified"                # Opt-in observed certified LS union, not file-count scaling.
+# file = "luminosity_per_ls.json"    # {"RUN":{"LS":luminosity_in_pb_inverse}}
+# unit = "pb^-1"
+# assume_complete_lumisections = true # Required explicit assumption in certified mode.
+# [triggers]
+# priority = ["Muon"]
+# mc = ["single_muon"]
+# groups = { single_muon = ["HLT_IsoMu24"] }
+# streams = { Muon = ["single_muon"] }
+
+[[objects]]
+name = "jets"
+collection = "Jet"
+cut = "pt > 30 && abs(eta) < 2.4"
+sort_by = "pt"                     # Empty preserves order.
+# clean = { against = ["muons"], dr = 0.4 } # Objects must already be defined.
+
+[variables]
+njet = "length(jets)"
+[weights]
+mc = ["genWeight"]                 # Event expressions; [] gives weight one.
+data = []
+# variations = [{name="weight", up="1.1", down="0.9"}] # Multiplicative factors.
+# [output]
+# columns = ["njet"]                # Retained variables for correction bindings.
+
+[[cuts]]
+name = "one_jet"
+expr = "njet >= 1"
+only = "all"                       # all, mc, data.
+[[regions]]
+name = "signal"
+after = "one_jet"                  # Cut name or all; default region after last cut.
+# expr = "njet == 1"                # Additional region predicate, e.g. exclusive categories.
+# Kinematic event helpers: mass_massive(pt1,eta1,phi1,m1,pt2,eta2,phi2,m2),
+# pair_pt(pt1,phi1,pt2,phi2); mass_massless remains unchanged.
+# Trigger-object matching: trigger_match(muons.eta[1],muons.phi[1],13,2,0.1).
+# Configure ID/filter bits/radius for the actual path/era; see docs/TRIGGERS.md.
+[[histograms]]
+name = "njet"
+values = ["njet"]
+range = [0.5, 1.0, 10.5]            # Exactly one: range, edges, linspace.
+# edges = [0, 1, 2]
+# linspace = [0, 10, 10]             # low, high, number of bins.
+when = "true"
+regions = ["signal"]               # [] means all regions.
+xlabel = "Jet multiplicity"
+[merge]
+yield_variable = "njet"
+
+# [hooks]                           # Qualified functions; optional expert extension.
+# correct = "Cascade.Systematics.apply_corrections"
+# [corrections.sets]
+# muon = "${jsonpog}/MUO/2022_Summer22/muon_Z.json.gz"
+# [[corrections.object_sf]]
+# enabled = true                    # Also on event_weight, flat, shapes, fit.normsys.
+# name = "muon_id"
+# set = "muon"
+# correction = "NUM_TightID_DEN_TrackerMuons"
+# object = "muons"
+# indices = [1]
+# when = "pt > 20"
+# inputs = {eta = "eta", pt = "pt"}
+# systematic = "scale_factors"
+# nominal = "nominal"
+# up = "systup"
+# down = "systdown"
+# [[corrections.event_weight]]       # Same bindings, event scope; no object/indices/when.
+# name = "pileup"
+# set = "pileup"
+# correction = "your_correction"
+# inputs = {NumTrueInteractions = "Pileup_nTrueInt"}
+# systematic = "weights"
+# nominal = "nominal"
+# up = "up"
+# down = "down"
+# [[corrections.flat]]
+# name = "example"
+# nominal = 1.0
+# up = 1.02
+# down = 0.98
+
+# [[shape_variations]]
+# name = "scale"
+# collection = "Jet"
+# kind = "scale"                    # scale, jes or jer (see CONFIG.md).
+# up = "1.01"
+# down = "0.99"
+# fields = ["pt", "mass"]
+# samples = []                      # All MC; data never varied.
+# met = "PuppiMET"                  # Empty disables recoil propagation.
+# met_min_pt = 15.0
+# JES: corrections = "payload.json.gz", source = "correction_name".
+# JER: corrections, resolution, scale_factor, smear_file required.
+# JER optional: smear="JERSmear", nominal=false, rho="Rho_fixedGridRhoFastjetAll",
+# event="event", genjet="GenJet", genjet_index="genJetIdx", match_dr=0.2,
+# match_nsigma=3.0. inputs={JetEta="eta", JetPt="pt"} renames payload inputs.
+
+# [fit]                             # Absent or options.fit=false skips fit.
+# signal = ["signal"]
+# channels = [{region="signal", variable="njet"}]
+# poi = "mu"
+# poi_init = 1.0
+# poi_bounds = [0.0, 10.0]
+# staterror = true
+# histosys = true
+# [[fit.normsys]]
+# name = "example_norm"
+# size = 0.02                       # Example only, not a recommended prior.
+# samples = ["all"]
+# placeholder = true
+# [plot]
+# lumi_label = "1 fb^{-1}"
+# logy = ["njet"]
+# labels = {signal="Signal"}
+# colors = {signal="#C5001A"}
+# region_labels = {signal="Signal region"}
+
+# Optional theory vector systematic, disabled until sample conventions verified.
+# See docs/THEORY_WEIGHTS.md; indices below are SYNTHETIC, not universal.
+# [[theory_weights]]
+# enabled = false
+# name = "example_ISR"
+# family = "ps"
+# branch = "PSWeight"
+# samples = ["signal"]
+# indices = [1, 3]                    # explicit 1-based [Up, Down]
+# expected_length = 4
+# normalization = "relative"         # or central + central_index;
+#                                   # absolute + reference_branch
+# reduction = "pair"                 # envelope / replica_std /
+#                                   # hessian_symmetric / hessian_pairs
+# convention = "Validated generator reference and member mapping"
+# cl_scale = 1.0                     # REQUIRED only for PDF reductions
+# pdf_template_model = "rank_one"     # REQUIRED acknowledgment for PDF band reducers:
+#                                   # single fully correlated bin-shift nuisance,
+#                                   # NOT full replica/eigenvector covariance
+# Nonlinear envelope/PDF reducers require ONE distinct sample; only pair may
+# correlate multiple samples. Independent samples require distinct nuisance names.
+
+# Optional local process batch execution (serial run remains unchanged).
+# [batch]
+# workers = 2
+# threads = 1

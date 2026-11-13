@@ -1,0 +1,8 @@
+# Exclude local investigation state from source archives.
+# export-ignore does not remove tracked files or scrub Git history.
+/.project export-ignore
+/.project/** export-ignore
+/artifacts export-ignore
+/artifacts/** export-ignore
+/reports export-ignore
+/reports/** export-ignore

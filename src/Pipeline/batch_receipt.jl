@@ -1,0 +1,37 @@
+"""Verify a task receipt, full artifact checksums and persisted raw extraction contracts."""
+function batch_receipt(work, m, cfg, task; path = joinpath(work, "receipts", task["id"] * ".json"))
+    batch_safe_path(path; root = work)
+    isfile(path) || return nothing
+    islink(path) && error("symlink task receipt")
+    r = _jsdict(JSON3.read(read(path, String)))
+    r["manifest"] == m["id"] && r["task"] == task["id"] || error("foreign batch receipt")
+    r["fingerprint"] == batch_hash(m["fingerprint"]) || error("wrong receipt code/config contract")
+    attempt = String(r["attempt"])
+    occursin(r"^attempt-[A-Za-z0-9]+$", attempt) || error("unsafe attempt path")
+    dir = joinpath(work, "attempts", task["id"], attempt, "artifacts")
+    batch_safe_path(dir; root = work)
+    isdir(dir) && !islink(dir) || error("missing/foreign attempt artifacts")
+    for parent in (dirname(dir), dirname(dirname(dir)), dirname(dirname(dirname(dir))))
+        islink(parent) && error("symlink attempt path")
+    end
+    batch_hash(batch_files(dir)) == batch_hash(r["files"]) || error("corrupt batch task output")
+    name = task["sample"]; chunk = task["entry"]["chunk"]
+    select = chunk_path(dir, :select, name, chunk, ".cols")
+    cor = chunk_path(dir, :correct, name, chunk, ".cols")
+    hist = chunk_path(dir, :histogram, name, chunk, ".json")
+    ms = require_artifact(select, "select"); mc = require_artifact(cor, "correct"); mh = require_artifact(hist, "histogram")
+    all(meta["sample"] == name for meta in (ms, mc, mh)) || error("wrong task sample")
+    get(mc, "hook", nothing) == m["fingerprint"]["hooks"]["correct"] || error("wrong correction hook")
+    ms["nevents"] == task["entry"]["nevents"] || error("wrong task event count")
+    expected_hist = artifact_key("histogram", ms["key"], mc["key"], section_hash(cfg, "histograms", "regions"), code_hash(["Histograms", "Pipeline"]))
+    mh["key"] == expected_hist || error("wrong histogram artifact key")
+    ms["source"] == task["entry"]["path"] || error("wrong task source")
+    verify_correct_extraction(cfg, sample_by_name(cfg, name), cor)
+    Systematics.verify_theory_extraction(cfg, read_store(hist))
+    read_event_table(select)
+    for label in get(ms, "shape", String[])
+        read_event_table(shape_chunk_path(dir, :select, name, chunk, label, ".cols"))
+        read_column_file(shape_chunk_path(dir, :correct, name, chunk, label, ".cols"))
+    end
+    return (receipt = r, dir = dir)
+end

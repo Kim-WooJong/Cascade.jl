@@ -1,0 +1,6 @@
+#!/bin/bash
+# Cascade command line: cascade run analysis.toml [--steps a,b | --from s | --only s] [--samples x,y]
+# Environment: CASCADE_THREADS (default 8), JULIA (default "julia +release").
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+JULIA_CMD=${JULIA:-"$HOME/.juliaup/bin/julia +release"}
+exec $JULIA_CMD --startup-file=no -t "${CASCADE_THREADS:-8}" --project="$HERE/.." "$HERE/cascade.jl" "$@"

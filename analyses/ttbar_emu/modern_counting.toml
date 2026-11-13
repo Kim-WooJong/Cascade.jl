@@ -1,0 +1,262 @@
+# INCOMPLETE / FAIL-CLOSED: independent Summer22 OS e-mu >=2j counting candidate.
+# The configured 1210 pb^-1, 924 pb and BRs are UNVALIDATED reference values.
+# No corrections/theory uncertainties are silently replaced by unity: execution
+# is refused before input discovery until six config-bound evidence files exist.
+# Populate and validate corrections + certified lumi before approving evidence.
+# Baseline and all existing analysis.toml profiles remain untouched.
+[analysis]
+name = "ttbar_emu_modern_counting"
+lumi_pb = 1210.0                # [P] Sec.1, 3: 1.21 fb^-1
+workdir = "cascade_out/ttbar_emu_modern_counting"
+
+[paths]
+mc = "~/nano_slim/mc/Run3Summer22NanoAODv12"
+data = "~/nano_slim/data/Run2022C"
+jsonpog = "/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG"
+
+[merge]
+yield_variable = "njet"         # every selected event fills it once (overflow in last bin)
+
+# ---------------------------------------------------------------- samples
+# MC cross sections [pb] are the pre-validation values of the reference
+# plot_common.jl; sigma = xsec_pb * branching_ratio.
+
+[[samples]]
+name = "TTto2L2Nu"
+kind = "mc"
+group = "ttbar"
+xsec_pb = 924.0
+branching_ratio = 0.1061
+files = ["${mc}/TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "TWminusto2L2Nu"
+kind = "mc"
+group = "single_top"
+xsec_pb = 43.95
+branching_ratio = 0.1061
+files = ["${mc}/TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "TbarWplusto2L2Nu"
+kind = "mc"
+group = "single_top"
+xsec_pb = 43.95
+branching_ratio = 0.1061
+files = ["${mc}/TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "WWto2L2Nu"
+kind = "mc"
+group = "diboson"
+xsec_pb = 125.8
+branching_ratio = 0.1061
+files = ["${mc}/WWto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "WZto3LNu"
+kind = "mc"
+group = "diboson"
+xsec_pb = 4.92
+files = ["${mc}/WZto3LNu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "WZto2L2Q"
+kind = "mc"
+group = "diboson"
+xsec_pb = 3.5
+files = ["${mc}/WZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "DYto2L_MLL50"
+kind = "mc"
+group = "zjets"
+xsec_pb = 6346.0
+files = ["${mc}/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "DYto2L_MLL10to50"
+kind = "mc"
+group = "zjets"
+xsec_pb = 19982.0
+files = ["${mc}/DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "TTtoLNu2Q"
+kind = "mc"
+group = "nonprompt_ttbar"
+xsec_pb = 924.0
+branching_ratio = 0.4393
+files = ["${mc}/TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+# Data primary datasets. SingleMuon (run <= 356386) and Muon (run >= 356426) do not
+# overlap in run number, so both use the "Muon" trigger stream.
+[[samples]]
+name = "MuonEG"
+kind = "data"
+stream = "MuonEG"
+group = "data"
+files = ["${data}/MuonEG/NANOAOD/22Sep2023-v1/*/*.root"]
+
+[[samples]]
+name = "SingleMuon"
+kind = "data"
+stream = "Muon"
+group = "data"
+files = ["${data}/SingleMuon/NANOAOD/22Sep2023-v1/*/*.root"]
+
+[[samples]]
+name = "Muon"
+kind = "data"
+stream = "Muon"
+group = "data"
+files = ["${data}/Muon/NANOAOD/22Sep2023-v1/*/*.root"]
+
+[[samples]]
+name = "EGamma"
+kind = "data"
+stream = "EGamma"
+group = "data"
+files = ["${data}/EGamma/NANOAOD/22Sep2023-v1/*/*.root"]
+
+# ---------------------------------------------------------------- data quality, trigger
+[data_quality]
+run_range = [356309, 356615]    # [AN] 2.2: 27.07-02.08.2022
+golden_json = "Cert_Collisions2022_355100_362760_Golden.json"
+
+[triggers]
+# [AN] Table 5 + 2.3: e-mu cross triggers OR single-lepton triggers.
+priority = ["MuonEG", "Muon", "EGamma"]   # PD overlap removal order
+mc = ["emu", "single_mu", "single_e"]
+
+[triggers.groups]
+emu = ["HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+       "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL"]
+single_mu = ["HLT_IsoMu24"]
+single_e = ["HLT_Ele32_WPTight_Gsf"]
+
+[triggers.streams]
+MuonEG = ["emu"]
+Muon = ["single_mu"]
+EGamma = ["single_e"]
+
+# ---------------------------------------------------------------- objects
+# Signal (pT > 35) and veto (pT > 10) leptons use the same ID ([AN] 3.1).
+# Electron: |eta| < 2.4, ECAL gap 1.444 < |eta_SC| < 1.566 excluded, cut-based tight.
+# Muon: |eta| < 2.4, tight ID, PF relative isolation (dR < 0.4) < 0.15.
+[[objects]]
+name = "electrons"
+collection = "Electron"
+cut = "pt > 35.0 && abs(eta) < 2.4 && !(1.444 < abs(eta + deltaEtaSC) < 1.566) && cutBased >= 4"
+
+[[objects]]
+name = "muons"
+collection = "Muon"
+cut = "pt > 35.0 && abs(eta) < 2.4 && tightId && pfRelIso04_all < 0.15"
+
+[[objects]]
+name = "veto_electrons"
+collection = "Electron"
+cut = "pt > 10.0 && abs(eta) < 2.4 && !(1.444 < abs(eta + deltaEtaSC) < 1.566) && cutBased >= 4"
+
+[[objects]]
+name = "veto_muons"
+collection = "Muon"
+cut = "pt > 10.0 && abs(eta) < 2.4 && tightId && pfRelIso04_all < 0.15"
+
+# AK4 PUPPI jets: pT > 30, |eta| < 2.4, tight jet ID (jetId bit 2), dR(jet, signal lepton) > 0.4.
+[[objects]]
+name = "jets"
+collection = "Jet"
+cut = "pt > 30.0 && abs(eta) < 2.4 && (jetId & 2) != 0"
+clean = { against = ["electrons", "muons"], dr = 0.4 }
+sort_by = "pt"
+
+# ---------------------------------------------------------------- event selection
+[variables]
+njet = "length(jets)"
+mll = "mass_massless(electrons.pt[1], electrons.eta[1], electrons.phi[1], muons.pt[1], muons.eta[1], muons.phi[1])"
+# Selected-lepton kinematics for the scale factors (kept events have exactly one
+# electron and one muon). The SC eta is summed in NanoAOD (Float32) precision.
+mu1_pt = "muons.pt[1]"
+mu1_eta = "muons.eta[1]"
+e1_pt = "electrons.pt[1]"
+e1_eta_sc = "electrons.eta[1] + electrons.deltaEtaSC[1]"
+
+[output]
+columns = ["mu1_pt", "mu1_eta", "e1_pt", "e1_eta_sc"]
+
+[weights]
+mc = ["genWeight"]
+data = []
+
+[[cuts]]
+name = "lumimask"
+expr = "lumimask"               # run range + Golden JSON
+only = "data"
+
+[[cuts]]
+name = "trigger"
+expr = "trigger"
+
+[[cuts]]
+name = "two_leptons"
+expr = "length(electrons) == 1 && length(muons) == 1"
+
+[[cuts]]
+name = "extra_lepton_veto"
+expr = "length(veto_electrons) == 1 && length(veto_muons) == 1"
+
+[[cuts]]
+name = "opposite_sign"
+expr = "electrons.charge[1] * muons.charge[1] < 0"
+
+[[cuts]]
+name = "mll"
+expr = "mll > 20.0"             # [P] Sec.4
+
+[[cuts]]
+name = "njet_ge1"
+expr = "njet >= 1"
+
+[[cuts]]
+name = "njet_ge2"
+expr = "njet >= 2"              # [P] Sec.7 counting
+
+[[regions]]
+name = "emu_ge2j"
+after = "njet_ge2"
+
+[[histograms]]
+name = "njet"
+edges = [1.5, 1000000.0]
+values = ["njet"]
+regions = ["emu_ge2j"]
+
+[options]
+default_profile = "modern_counting"
+corrections = false
+shape_variations = false
+fit = false
+
+[profiles.modern_counting]
+
+[execution]
+checkpoints = false
+
+[counting]
+region = "emu_ge2j"
+signal_samples = ["TTto2L2Nu"]
+background_samples = ["TWminusto2L2Nu", "TbarWplusto2L2Nu", "WWto2L2Nu", "WZto3LNu", "WZto2L2Q", "DYto2L_MLL50", "DYto2L_MLL10to50", "TTtoLNu2Q"]
+sigma_ref_pb = 924.0
+lumi_mode = "external"
+signal_definition = "Inclusive ttbar inferred from dileptonic W decays, including tau feed-down present in TTto2L2Nu; semileptonic nonprompt ttbar is background. Decay filter and BR still require campaign validation."
+br_convention = "included_once_in_scaled_signal"
+
+[counting.required_evidence]
+trigger_or = ""
+luminosity = ""
+calibration = ""
+backgrounds = ""
+signal_normalization = ""
+theory_acceptance = ""

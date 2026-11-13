@@ -1,0 +1,17 @@
+# Add to the existing analysis TOML; genuine bounded ROOT windows and automatic shards.
+[reduced_skim]
+format = "root_rntuple"
+mode = "streaming"
+retention = "analysis_union"
+include = ["event"]
+drop = []
+
+[reduced_skim.streaming]
+window_events = 20000
+# Independent of input windows; uncompressed typed bytes including jagged offsets.
+target_shard_events = 250000
+target_shard_payload_bytes = 32000000
+max_basket_bytes = 64000000
+max_window_bytes = 128000000
+max_buffer_bytes = 1024000000
+max_metadata_bytes = 64000000

@@ -1,0 +1,28 @@
+{
+  "schema_version": 2,
+  "description": "Hybrid jet energy resolution smearing with the same structure as the CMS JME JERSmear correction: scaling for gen-matched jets (GenPt >= 0), stochastic smearing seeded by (JetPt, JetEta, Rho, EventID) otherwise.",
+  "corrections": [
+    {
+      "name": "JERSmear",
+      "version": 1,
+      "inputs": [
+        {"name": "JetPt", "type": "real"}, {"name": "JetEta", "type": "real"},
+        {"name": "GenPt", "type": "real", "description": "matched GenJet pt, or -1 if no match"},
+        {"name": "Rho", "type": "real"}, {"name": "EventID", "type": "int"},
+        {"name": "JER", "type": "real"}, {"name": "JERSF", "type": "real"}
+      ],
+      "output": {"name": "smear", "type": "real"},
+      "data": {
+        "nodetype": "binning", "input": "GenPt", "edges": [-1.0, 0.0, 1.0], "flow": "clamp",
+        "content": [
+          {"nodetype": "transform", "input": "GenPt",
+           "rule": {"nodetype": "hashprng", "inputs": ["JetPt", "JetEta", "Rho", "EventID"], "distribution": "normal"},
+           "content": {"nodetype": "formula", "expression": "1 + sqrt(max(x*x - 1, 0)) * y * z", "parser": "TFormula",
+                       "variables": ["JERSF", "JER", "GenPt"]}},
+          {"nodetype": "formula", "expression": "1 + (x-1)*(y-z)/y", "parser": "TFormula",
+           "variables": ["JERSF", "JetPt", "GenPt"]}
+        ]
+      }
+    }
+  ]
+}

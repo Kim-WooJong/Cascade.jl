@@ -1,0 +1,275 @@
+# ttbar -> e mu control analysis (AN-22-103, arXiv:2303.10680) on Run3Summer22
+# NanoAODv12 MC and Run2022C data (run 356309-356615), reimplemented on Cascade.
+# Reference: ~/analisis/ttbar_ctrl (TTbarEmu.jl, fill_control.jl, cutflow_mc.jl).
+# No scale factors, pileup or b-tagging yet: weights are genWeight only.
+
+[analysis]
+name = "ttbar_emu"
+lumi_pb = 1210.0                # [P] Sec.1, 3: 1.21 fb^-1
+workdir = "cascade_out/ttbar_emu"
+
+[paths]
+mc = "~/nano_slim/mc/Run3Summer22NanoAODv12"
+data = "~/nano_slim/data/Run2022C"
+
+[merge]
+yield_variable = "njet"         # every selected event fills it once (overflow in last bin)
+
+# ---------------------------------------------------------------- samples
+# MC cross sections [pb] are the pre-validation values of the reference
+# plot_common.jl; sigma = xsec_pb * branching_ratio.
+
+[[samples]]
+name = "TTto2L2Nu"
+kind = "mc"
+group = "ttbar"
+xsec_pb = 924.0
+branching_ratio = 0.1061
+files = ["${mc}/TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "TWminusto2L2Nu"
+kind = "mc"
+group = "single_top"
+xsec_pb = 43.95
+branching_ratio = 0.1061
+files = ["${mc}/TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "TbarWplusto2L2Nu"
+kind = "mc"
+group = "single_top"
+xsec_pb = 43.95
+branching_ratio = 0.1061
+files = ["${mc}/TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "WWto2L2Nu"
+kind = "mc"
+group = "diboson"
+xsec_pb = 125.8
+branching_ratio = 0.1061
+files = ["${mc}/WWto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "WZto3LNu"
+kind = "mc"
+group = "diboson"
+xsec_pb = 4.92
+files = ["${mc}/WZto3LNu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "WZto2L2Q"
+kind = "mc"
+group = "diboson"
+xsec_pb = 3.5
+files = ["${mc}/WZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "DYto2L_MLL50"
+kind = "mc"
+group = "zjets"
+xsec_pb = 6346.0
+files = ["${mc}/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "DYto2L_MLL10to50"
+kind = "mc"
+group = "zjets"
+xsec_pb = 19982.0
+files = ["${mc}/DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "TTtoLNu2Q"
+kind = "mc"
+group = "ttbar"
+xsec_pb = 924.0
+branching_ratio = 0.4393
+files = ["${mc}/TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+# Data primary datasets. SingleMuon (run <= 356386) and Muon (run >= 356426) do not
+# overlap in run number, so both use the "Muon" trigger stream.
+[[samples]]
+name = "MuonEG"
+kind = "data"
+stream = "MuonEG"
+group = "data"
+files = ["${data}/MuonEG/NANOAOD/22Sep2023-v1/*/*.root"]
+
+[[samples]]
+name = "SingleMuon"
+kind = "data"
+stream = "Muon"
+group = "data"
+files = ["${data}/SingleMuon/NANOAOD/22Sep2023-v1/*/*.root"]
+
+[[samples]]
+name = "Muon"
+kind = "data"
+stream = "Muon"
+group = "data"
+files = ["${data}/Muon/NANOAOD/22Sep2023-v1/*/*.root"]
+
+[[samples]]
+name = "EGamma"
+kind = "data"
+stream = "EGamma"
+group = "data"
+files = ["${data}/EGamma/NANOAOD/22Sep2023-v1/*/*.root"]
+
+# ---------------------------------------------------------------- data quality, trigger
+[data_quality]
+run_range = [356309, 356615]    # [AN] 2.2: 27.07-02.08.2022
+golden_json = "Cert_Collisions2022_355100_362760_Golden.json"
+
+[triggers]
+# [AN] Table 5 + 2.3: e-mu cross triggers OR single-lepton triggers.
+priority = ["MuonEG", "Muon", "EGamma"]   # PD overlap removal order
+mc = ["emu", "single_mu", "single_e"]
+
+[triggers.groups]
+emu = ["HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+       "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL"]
+single_mu = ["HLT_IsoMu24"]
+single_e = ["HLT_Ele32_WPTight_Gsf"]
+
+[triggers.streams]
+MuonEG = ["emu"]
+Muon = ["single_mu"]
+EGamma = ["single_e"]
+
+# ---------------------------------------------------------------- objects
+# Signal (pT > 35) and veto (pT > 10) leptons use the same ID ([AN] 3.1).
+# Electron: |eta| < 2.4, ECAL gap 1.444 < |eta_SC| < 1.566 excluded, cut-based tight.
+# Muon: |eta| < 2.4, tight ID, PF relative isolation (dR < 0.4) < 0.15.
+[[objects]]
+name = "electrons"
+collection = "Electron"
+cut = "pt > 35.0 && abs(eta) < 2.4 && !(1.444 < abs(eta + deltaEtaSC) < 1.566) && cutBased >= 4"
+
+[[objects]]
+name = "muons"
+collection = "Muon"
+cut = "pt > 35.0 && abs(eta) < 2.4 && tightId && pfRelIso04_all < 0.15"
+
+[[objects]]
+name = "veto_electrons"
+collection = "Electron"
+cut = "pt > 10.0 && abs(eta) < 2.4 && !(1.444 < abs(eta + deltaEtaSC) < 1.566) && cutBased >= 4"
+
+[[objects]]
+name = "veto_muons"
+collection = "Muon"
+cut = "pt > 10.0 && abs(eta) < 2.4 && tightId && pfRelIso04_all < 0.15"
+
+# AK4 PUPPI jets: pT > 30, |eta| < 2.4, tight jet ID (jetId bit 2), dR(jet, signal lepton) > 0.4.
+[[objects]]
+name = "jets"
+collection = "Jet"
+cut = "pt > 30.0 && abs(eta) < 2.4 && (jetId & 2) != 0"
+clean = { against = ["electrons", "muons"], dr = 0.4 }
+sort_by = "pt"
+
+# ---------------------------------------------------------------- event selection
+[variables]
+njet = "length(jets)"
+mll = "mass_massless(electrons.pt[1], electrons.eta[1], electrons.phi[1], muons.pt[1], muons.eta[1], muons.phi[1])"
+
+[weights]
+mc = ["genWeight"]
+data = []
+
+[[cuts]]
+name = "lumimask"
+expr = "lumimask"               # run range + Golden JSON
+only = "data"
+
+[[cuts]]
+name = "trigger"
+expr = "trigger"
+
+[[cuts]]
+name = "two_leptons"
+expr = "length(electrons) == 1 && length(muons) == 1"
+
+[[cuts]]
+name = "extra_lepton_veto"
+expr = "length(veto_electrons) == 1 && length(veto_muons) == 1"
+
+[[cuts]]
+name = "opposite_sign"
+expr = "electrons.charge[1] * muons.charge[1] < 0"
+
+[[cuts]]
+name = "mll"
+expr = "mll > 20.0"             # [P] Sec.4
+
+[[cuts]]
+name = "njet_ge1"
+expr = "njet >= 1"
+
+[[cuts]]
+name = "njet_ge2"
+expr = "njet >= 2"              # [P] Sec.7 counting
+
+[[regions]]
+name = "emu_ge1j"               # control plots, combined-fit e-mu category
+after = "njet_ge1"
+
+[[regions]]
+name = "emu_ge2j"               # cross-section counting
+after = "njet_ge2"
+
+# ---------------------------------------------------------------- histograms
+# Binning as in the reference fill_control.jl. Underflow dropped, overflow in the last bin.
+[[histograms]]
+name = "lep_pt"
+range = [35.0, 10.0, 205.0]
+values = ["electrons.pt[1]", "muons.pt[1]"]
+xlabel = "Lepton p_{T} (GeV)"
+
+[[histograms]]
+name = "lep_eta"
+linspace = [-2.4, 2.4, 20]
+values = ["electrons.eta[1]", "muons.eta[1]"]
+xlabel = "Lepton #eta"
+
+[[histograms]]
+name = "jet1_pt"
+range = [30.0, 20.0, 410.0]
+values = ["jets.pt[1]"]
+when = "njet >= 1"
+xlabel = "Leading jet p_{T} (GeV)"
+
+[[histograms]]
+name = "jet2_pt"
+range = [30.0, 20.0, 410.0]
+values = ["jets.pt[2]"]
+when = "njet >= 2"
+xlabel = "Subleading jet p_{T} (GeV)"
+
+[[histograms]]
+name = "jet3_pt"
+range = [30.0, 20.0, 410.0]
+values = ["jets.pt[3]"]
+when = "njet >= 3"
+xlabel = "Third jet p_{T} (GeV)"
+
+[[histograms]]
+name = "jet1_eta"
+linspace = [-2.5, 2.5, 20]
+values = ["jets.eta[1]"]
+when = "njet >= 1"
+xlabel = "Leading jet #eta"
+
+[[histograms]]
+name = "mll"
+range = [20.0, 20.0, 420.0]
+values = ["mll"]
+xlabel = "m_{e#mu} (GeV)"
+
+[[histograms]]
+name = "njet"
+range = [0.5, 1.0, 7.5]
+values = ["njet"]
+xlabel = "Number of jets"

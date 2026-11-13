@@ -1,0 +1,295 @@
+# Configuration-only technical control study; not a physics measurement.
+[analysis]
+name = "dy_mumu"
+lumi_pb = 1210.0
+workdir = "cascade_out/dy_mumu"
+
+[paths]
+mc = "~/nano_slim/mc/Run3Summer22NanoAODv12"
+data = "~/nano_slim/data/Run2022C"
+jsonpog = "/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG"
+certification = "~/analisis/ttbar_ctrl/config/Cert_Collisions2022_355100_362760_Golden.json"
+# On another host edit certification, or use "${ENV:CASCADE_GOLDEN_JSON}".
+
+[merge]
+yield_variable = "njet"
+
+# All shared cross sections and branching ratios copied unchanged from
+# analyses/ttbar_emu/analysis.toml; pre-validation inputs, not recommendations.
+[[samples]]
+name = "TTto2L2Nu"
+kind = "mc"
+group = "ttbar"
+xsec_pb = 924.0
+branching_ratio = 0.1061
+files = ["${mc}/TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "TWminusto2L2Nu"
+kind = "mc"
+group = "single_top"
+xsec_pb = 43.95
+branching_ratio = 0.1061
+files = ["${mc}/TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "TbarWplusto2L2Nu"
+kind = "mc"
+group = "single_top"
+xsec_pb = 43.95
+branching_ratio = 0.1061
+files = ["${mc}/TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "WWto2L2Nu"
+kind = "mc"
+group = "diboson"
+xsec_pb = 125.8
+branching_ratio = 0.1061
+files = ["${mc}/WWto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "WZto3LNu"
+kind = "mc"
+group = "diboson"
+xsec_pb = 4.92
+files = ["${mc}/WZto3LNu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "WZto2L2Q"
+kind = "mc"
+group = "diboson"
+xsec_pb = 3.5
+files = ["${mc}/WZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "DYto2L_MLL50"
+kind = "mc"
+group = "zjets"
+xsec_pb = 6346.0
+files = ["${mc}/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "DYto2L_MLL10to50"
+kind = "mc"
+group = "zjets"
+xsec_pb = 19982.0
+files = ["${mc}/DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "TTtoLNu2Q"
+kind = "mc"
+group = "ttbar"
+xsec_pb = 924.0
+branching_ratio = 0.4393
+files = ["${mc}/TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/*/*/*.root"]
+
+[[samples]]
+name = "SingleMuon"
+kind = "data"
+stream = "Muon"
+group = "data"
+files = ["${data}/SingleMuon/NANOAOD/22Sep2023-v1/*/*.root"]
+
+[[samples]]
+name = "Muon"
+kind = "data"
+stream = "Muon"
+group = "data"
+files = ["${data}/Muon/NANOAOD/22Sep2023-v1/*/*.root"]
+
+[data_quality]
+run_range = [356309, 356615]
+# Same certification payload as ttbar; external gate input, not vendored.
+golden_json = "${certification}"
+run_branch = "run"
+lumi_branch = "luminosityBlock"
+
+[triggers]
+priority = ["Muon"]
+mc = ["single_mu"]
+[triggers.groups]
+single_mu = ["HLT_IsoMu24"]
+[triggers.streams]
+Muon = ["single_mu"]
+
+[[objects]]
+name = "muons"
+collection = "Muon"
+cut = "pt > 15.0 && abs(eta) < 2.4 && tightId && pfRelIso04_all < 0.15"
+sort_by = "pt"
+
+[[objects]]
+name = "jets"
+collection = "Jet"
+cut = "pt > 30.0 && abs(eta) < 2.4 && (jetId & 2) != 0"
+clean = { against = ["muons"], dr = 0.4 }
+sort_by = "pt"
+
+[variables]
+njet = "length(jets)"
+m_mumu = "mass_massive(muons.pt[1], muons.eta[1], muons.phi[1], muons.mass[1], muons.pt[2], muons.eta[2], muons.phi[2], muons.mass[2])"
+mu1_pt = "muons.pt[1]"
+mu2_pt = "muons.pt[2]"
+mu1_eta = "muons.eta[1]"
+mu2_eta = "muons.eta[2]"
+dimuon_pt = "pair_pt(muons.pt[1], muons.phi[1], muons.pt[2], muons.phi[2])"
+
+[output]
+columns = ["mu1_pt", "mu2_pt", "mu1_eta", "mu2_eta"]
+
+[weights]
+mc = ["genWeight"]
+data = []
+
+[[cuts]]
+name = "lumimask"
+expr = "lumimask"
+only = "data"
+[[cuts]]
+name = "trigger"
+expr = "trigger"
+[[cuts]]
+name = "two_muons"
+expr = "length(muons) == 2"
+[[cuts]]
+name = "leading_pt"
+expr = "muons.pt[1] > 26.0"
+[[cuts]]
+name = "opposite_sign"
+expr = "muons.charge[1] * muons.charge[2] < 0"
+[[cuts]]
+name = "z_window"
+expr = "70.0 < m_mumu < 110.0"
+
+[[regions]]
+name = "mumu_wide"
+after = "opposite_sign"
+[[regions]]
+name = "mumu_z"
+after = "z_window"
+
+[[histograms]]
+name = "m_mumu"
+range = [0.0, 5.0, 200.0]
+values = ["m_mumu"]
+xlabel = "m_{#mu#mu} (GeV)"
+[[histograms]]
+name = "mu1_pt"
+range = [0.0, 10.0, 200.0]
+values = ["mu1_pt"]
+xlabel = "Leading muon p_{T} (GeV)"
+[[histograms]]
+name = "mu2_pt"
+range = [0.0, 10.0, 200.0]
+values = ["mu2_pt"]
+xlabel = "Subleading muon p_{T} (GeV)"
+[[histograms]]
+name = "mu1_eta"
+linspace = [-2.4, 2.4, 24]
+values = ["mu1_eta"]
+xlabel = "Leading muon #eta"
+[[histograms]]
+name = "mu2_eta"
+linspace = [-2.4, 2.4, 24]
+values = ["mu2_eta"]
+xlabel = "Subleading muon #eta"
+[[histograms]]
+name = "dimuon_pt"
+range = [0.0, 10.0, 200.0]
+values = ["dimuon_pt"]
+xlabel = "Dimuon p_{T} (GeV)"
+[[histograms]]
+name = "njet"
+range = [-0.5, 1.0, 7.5]
+values = ["njet"]
+xlabel = "Number of jets"
+
+[hooks]
+correct = "Cascade.Systematics.apply_corrections"
+[corrections.sets]
+muon = "${jsonpog}/MUO/2022_Summer22/muon_Z.json.gz"
+pileup = "${jsonpog}/LUM/2022_Summer22/puWeights.json.gz"
+
+[[corrections.object_sf]]
+name = "muon_id"
+set = "muon"
+correction = "NUM_TightID_DEN_TrackerMuons"
+object = "muons"
+indices = [1, 2]
+inputs = { eta = "eta", pt = "pt" }
+systematic = "scale_factors"
+nominal = "nominal"
+up = "systup"
+down = "systdown"
+
+[[corrections.object_sf]]
+name = "muon_iso"
+set = "muon"
+correction = "NUM_TightPFIso_DEN_TightID"
+object = "muons"
+indices = [1, 2]
+inputs = { eta = "eta", pt = "pt" }
+systematic = "scale_factors"
+nominal = "nominal"
+up = "systup"
+down = "systdown"
+
+# Technical leading-leg approximation, NOT a dimuon event-OR efficiency SF.
+# Trigger-object matching and data/MC efficiency maps are not available here.
+[[corrections.object_sf]]
+name = "trigger_single_mu"
+set = "muon"
+correction = "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight"
+object = "muons"
+indices = [1]
+inputs = { eta = "eta", pt = "pt" }
+systematic = "scale_factors"
+nominal = "nominal"
+up = "systup"
+down = "systdown"
+
+[[corrections.event_weight]]
+name = "pileup"
+set = "pileup"
+correction = "Collisions2022_355100_357900_eraBCD_GoldenJson"
+inputs = { NumTrueInteractions = "Pileup_nTrueInt" }
+systematic = "weights"
+nominal = "nominal"
+up = "up"
+down = "down"
+
+# Every prior below is a technical placeholder, not a physics recommendation.
+[fit]
+poi = "mu_DY"
+signal = ["zjets"]
+channels = [{ region = "mumu_z", variable = "m_mumu" }]
+impacts = true
+profile_interval = true
+[[fit.normsys]]
+name = "lumi_placeholder"
+size = 0.014
+samples = ["all"]
+placeholder = true
+[[fit.normsys]]
+name = "ttbar_placeholder"
+size = 0.20
+samples = ["ttbar"]
+placeholder = true
+[[fit.normsys]]
+name = "single_top_placeholder"
+size = 0.20
+samples = ["single_top"]
+placeholder = true
+[[fit.normsys]]
+name = "diboson_placeholder"
+size = 0.20
+samples = ["diboson"]
+placeholder = true
+
+[plot]
+lumi_label = "1.21 fb^{-1} (bounded technical subset)"
+logy = ["mu1_pt", "mu2_pt", "dimuon_pt"]
+labels = { ttbar = "t#bar{t}", single_top = "Single t", diboson = "Diboson", zjets = "DY" }
+colors = { ttbar = "#C5001A", single_top = "#E377C2", diboson = "#9467BD", zjets = "#1F77B4" }
+region_labels = { mumu_wide = "OS #mu#mu, wide mass", mumu_z = "OS #mu#mu, 70 < m < 110 GeV" }
