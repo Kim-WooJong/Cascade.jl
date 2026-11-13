@@ -1,4 +1,4 @@
-# Scale-factor oracle (gate only)
+# Scale-factor oracle (validation environment only)
 
 Independent check of the per-event weights produced by
 `Cascade.Systematics.apply_corrections` for `analyses/ttbar_emu/analysis.toml (profile "sf")`.

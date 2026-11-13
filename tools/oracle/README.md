@@ -1,26 +1,43 @@
-# correctionlib oracle (gate only)
+# Optional correctionlib oracle
 
-External test oracle for `Cascade.Corrections`. Python and correctionlib are
-used here only to produce reference values; Cascade never depends on them.
+These development utilities compare Cascade corrections with the independent
+Python correctionlib implementation. Python/correctionlib are not Cascade runtime
+dependencies. Use an existing, explicitly configured oracle environment and new
+output directories outside the maintained source tree.
 
-Files:
-- `schema_cases.py` — writes a correction set covering every schema-v2 node type,
-  all flow behaviours (incl. `wrap`), and the TFormula / HashPRNG / transform /
-  formularef / compound cases of correctionlib's own test-suite.
-- `correctionlib_oracle.py` — generates edge, flow, category and tree-guided random
-  inputs for every correction of a file, evaluates them with correctionlib and
-  writes `*.oracle.json` (floats as `float.hex`).
-- `run_oracle.sh` — runs both for the schema cases and the 2022_Summer22 POG files.
-- `compare_oracle.jl` + `report_oracle.jl` — Julia comparison (exact or relative
-  difference <= 1e-12, errors raised in the same cases, vectorized == scalar) and
-  throughput measurement.
-- `python_throughput.py` — correctionlib `evalv` throughput on the same points.
+## Synthetic schema comparison
 
-Run on gate from the repository copy:
+```sh
+# OUT is a new absolute output directory; create it explicitly first.
+python3 tools/oracle/schema_cases.py "$OUT/schema_cases.json"
+python3 tools/oracle/correctionlib_oracle.py "$OUT/schema_cases.json" "$OUT/schema_cases.oracle.json"
+julia --startup-file=no --project=. tools/oracle/compare_oracle.jl "$OUT"
+```
 
-    bash tools/oracle/run_oracle.sh oracle_out
-    julia +release --project=. tools/oracle/compare_oracle.jl oracle_out
-    CASCADE_REAL_DATA=1 CASCADE_ORACLE_DIR=oracle_out julia +release --project=. -e \
-        'using Test; @testset "corrections" begin include("test/corrections/runtests.jl") end'
-    (source /cvmfs/sft.cern.ch/lcg/views/LCG_110/x86_64-el9-clang22-dbg/setup.sh; \
-        python3 tools/oracle/python_throughput.py oracle_out)
+`schema_cases.py` collects schema-v2 node/flow, TFormula, HashPRNG, transform,
+formularef and compound cases. `correctionlib_oracle.py` produces reference values,
+including exact hexadecimal float transport. The Julia comparator retains the
+existing exact/relative-error and error-behavior rules; vectorized and scalar
+results must agree. See the script help/source for input limits and switches.
+
+`run_oracle.sh` is a convenience driver for its explicitly coded CMS CVMFS and
+LCG environment. Inspect those existing paths before invoking it; it does not
+install dependencies and is not a portable environment setup command. Do not
+source a foreign Python/ROOT library environment into Julia blindly. Other
+installations should invoke the individual scripts with their own authorized
+correction payloads and configured interpreters.
+
+## Existing reference outputs
+
+```sh
+CASCADE_REAL_DATA=1 CASCADE_ORACLE_DIR="$OUT" julia --startup-file=no --project=. -e 'using Test; @testset "corrections" begin include("test/corrections/runtests.jl") end'
+python3 tools/oracle/python_throughput.py "$OUT"
+```
+
+The explicit flag enables tests requiring pre-existing reference outputs; it is
+not proof that all physical inputs or corrections are available. Keep synthetic
+schema agreement, real calibration checks, throughput diagnostics and final
+physics validation distinct. The [scale-factor workflow](sf_README.md) requires
+additional real inputs. Full-package validation remains incomplete; see
+[validation limits](../../docs/VALIDATION.md). Upstream fixture notices are retained
+in [THIRD_PARTY.md](../../THIRD_PARTY.md).

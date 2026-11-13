@@ -134,7 +134,7 @@ are built-in defaults and Cascade.Systematics.apply_corrections, pinned by full
 source hashes. There is no silent fallback to a different implementation.
 Process arguments use Julia Cmd interpolation/structured args, not a shell.
 
-See BATCH_VALIDATION.md for exact tested snapshots and remaining scope.
+See VALIDATION.md for exact tested snapshots and remaining scope.
 
 ## Reduced RNTuple input
 

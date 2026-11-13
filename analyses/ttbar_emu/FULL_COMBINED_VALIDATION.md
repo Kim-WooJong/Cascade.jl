@@ -3,7 +3,7 @@
 > Since phase 4 the configuration is `analysis.toml` with profile `phase2`
 > (formerly `analysis_phase2.toml`, JER nominal=false).
 
-Gate scratch `~/analisis/Cascade_dev/p3-full-technical` (source of commit 115436b,
+validation environment scratch `~/analisis/Cascade_dev/p3-full-technical` (source of commit 115436b,
 hashes in `p3-source.sha256`), Julia 1.12.2, 8 threads. **full.exit = 0, pyhf.exit = 0.**
 
 ## Steps (all 3307 files, 13 samples)

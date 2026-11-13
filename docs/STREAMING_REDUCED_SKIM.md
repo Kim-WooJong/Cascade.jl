@@ -205,4 +205,4 @@ format compatibility, not a promise to bypass an old semantic-code contract.
 Installed UnROOT0.11.11 is tested, compatible0.11 minimum pinned. Upstream documents
 ROOT>=6.34 interoperability; independent executed proof is uproot5.7.1, not C++ ROOT.
 
-Exact evidence and remaining limits: STREAMING_REDUCED_SKIM_VALIDATION.md.
+Exact evidence and remaining limits: STREAMING_VALIDATION.md.

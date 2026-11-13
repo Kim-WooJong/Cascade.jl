@@ -111,19 +111,19 @@ weights are independent opt-ins.
 
 ## Bounded validation
 
-Gate scratch `~/analisis/Cascade_dev/p5-trigger` contains the execution log
+validation environment scratch `~/analisis/Cascade_dev/p5-trigger` contains the execution log
 `trigger-final.log`. The complete weights test entry plus the dedicated
 matching tests passed **496 assertions**, exit **0** (47 new OR assertions and
 16 matching assertions). This includes exact legacy synthetic weights,
 synthetic end-to-end correction pipelines, and correction-cache regressions.
 Real-data and external-oracle tests were disabled; no all-data run was started.
 
-After syncing source/tests and the established gate Manifest, the command was:
+After syncing source/tests and the established validation environment Manifest, the command was:
 
 ```sh
 D="$HOME/analisis/Cascade_dev/p5-trigger"
 nice -n 10 env JULIA_THREADS=2 OPENBLAS_NUM_THREADS=1 \
   CASCADE_REAL_DATA=0 CASCADE_PYHF_ORACLE=0 \
-  bash ~/packages/rootplots-gate.sh --project="$D" -e \
+  bash ~/packages/configured-julia-root-runner.sh --project="$D" -e \
   'using Test, Cascade; include(joinpath(ARGS[1],"test/systematics/weights/runtests.jl")); include(joinpath(ARGS[1],"test/selection/test_trigger_match.jl"))' "$D"
 ```

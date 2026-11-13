@@ -162,5 +162,5 @@ not an OS RSS reservation; multiple temporary buffers and runtime compilation
 can use additional memory. ColumnFileSource is eager on open. No streaming,
 append, multiple trees or automatic shard/denominator duplication is claimed.
 Bitwise supported primitive tests, including NaN payload and negative zero,
-are recorded in REDUCED_SKIM_VALIDATION.md; unsupported nested/struct/string
+are recorded in VALIDATION.md; unsupported nested/struct/string
 schemas fail instead of coercing values.

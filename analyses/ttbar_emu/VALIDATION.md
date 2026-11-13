@@ -25,7 +25,7 @@ No commit, push, root Project.toml or src/Cascade.jl edit. No new dependency or
 root module include is needed: Systematics was already included after Corrections
 and Selection. Selection's existing `[output] columns` facility is sufficient.
 
-## Gate evidence
+## validation environment evidence
 
 Scratch: `/path/to/user/analisis/Cascade_dev/p2-weights`, initially based on
 `c7696ba` plus this lane's files, not other lanes' unfinished implementation.
@@ -77,7 +77,7 @@ No interpretation of the trigger placeholder as a measured zero uncertainty.
 
 ## Source snapshots
 
-SHA256 of gzip files inspected directly on gate on 2026-11-04:
+SHA256 of gzip files inspected directly on validation environment on 2026-11-04:
 
 | File under POG | SHA256 |
 |---|---|
@@ -120,7 +120,7 @@ names are `Electron-HLT-SF`, `Electron-HLT-DataEff`, `Electron-HLT-McEff` with
 
 ## Resumed validation invocation
 
-Executed on gate (absolute include paths are necessary: the ROOTPlots wrapper
+Executed on validation environment (absolute include paths are necessary: the ROOTPlots wrapper
 changes the working directory). The final command uses the two samples actually
 present in the existing oracle TSV: TTto2L2Nu (9052 events from two files) and
 TWminusto2L2Nu (3384 events from four files).
@@ -131,7 +131,7 @@ export JULIA_THREADS=4 CASCADE_REAL_DATA=1 CASCADE_SF_RUN=1
 export CASCADE_SF_WORKDIR=$D/work_sf CASCADE_SF_ORACLE=$D/oracle_out.tsv
 export CASCADE_SF_SAMPLES=TTto2L2Nu,TWminusto2L2Nu
 export CASCADE_REAL_WORKDIR=$D/work_base
-nice -n 10 bash ~/packages/rootplots-gate.sh --project=$D -e \
+nice -n 10 bash ~/packages/configured-julia-root-runner.sh --project=$D -e \
  'using Test, Cascade; @testset "weights validation" begin include("/path/to/user/analisis/Cascade_dev/p2-weights/test/systematics/weights/runtests.jl"); end; include("/path/to/user/analisis/Cascade_dev/p2-weights/test/pipeline/test_real_reproduction.jl")'
 ```
 

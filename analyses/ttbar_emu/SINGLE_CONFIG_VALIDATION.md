@@ -1,8 +1,8 @@
 # Single-config migration validation
 
-Scratch: `gate:~/analisis/Cascade_dev/p4-single-config`, archived from Git HEAD
+Scratch: `validation environment:~/analisis/Cascade_dev/p4-single-config`, archived from Git HEAD
 115436b, with only this lane's scoped changes rsynced over it and Manifest.toml
-copied from `~/analisis/Cascade`. All execution used the gate wrapper and nice 10.
+copied from `~/analisis/Cascade`. All execution used the validation environment wrapper and nice 10.
 No commit or push was made. The parallel DY analysis was not edited.
 
 ## API/schema
@@ -25,8 +25,8 @@ payload names to aliases, preserving positional order and the default contract.
 Scratch preparation:
 
 ```sh
-git -C /path/to/user/.openclaw/workspace-main/artifacts/Cascade.jl archive HEAD | ssh gate 'mkdir -p ~/analisis/Cascade_dev/p4-single-config && tar -x -C ~/analisis/Cascade_dev/p4-single-config'
-ssh gate 'cp ~/analisis/Cascade/Manifest.toml ~/analisis/Cascade_dev/p4-single-config/Manifest.toml'
+git -C /path/to/user/.openclaw/workspace-main/artifacts/Cascade.jl archive HEAD | ssh validation environment 'mkdir -p ~/analisis/Cascade_dev/p4-single-config && tar -x -C ~/analisis/Cascade_dev/p4-single-config'
+ssh validation environment 'cp ~/analisis/Cascade/Manifest.toml ~/analisis/Cascade_dev/p4-single-config/Manifest.toml'
 ```
 
 Scoped rsyncs copied `src/{Config,Pipeline,IO,Systematics}/`, `test/{config,pipeline}/`,
@@ -36,7 +36,7 @@ standalone production TOMLs).
 Final targeted execution (inside scratch):
 
 ```sh
-JULIA_THREADS=2 nice -n 10 bash ~/packages/rootplots-gate.sh --project="$PWD" "$PWD/targeted.jl"
+JULIA_THREADS=2 nice -n 10 bash ~/packages/configured-julia-root-runner.sh --project="$PWD" "$PWD/targeted.jl"
 ```
 
 `targeted.log`, exit 0: 99 named assertions plus four successful CLI `main`
@@ -49,13 +49,13 @@ finds 13 samples / 3307 input files. Default and explicit baseline agree.
 Full-suite command (effective wrapper thread count 4):
 
 ```sh
-JULIA_NUM_THREADS=8 nice -n 10 bash ~/packages/rootplots-gate.sh --project="$PWD" "$PWD/test/runtests.jl"
+JULIA_NUM_THREADS=8 nice -n 10 bash ~/packages/configured-julia-root-runner.sh --project="$PWD" "$PWD/test/runtests.jl"
 ```
 
 Full baseline command (8 threads):
 
 ```sh
-CASCADE_REAL_DATA=1 CASCADE_REAL_WORKDIR="$PWD/out_baseline" JULIA_THREADS=8 nice -n 10 bash ~/packages/rootplots-gate.sh --project="$PWD" "$PWD/test/pipeline/test_real_reproduction.jl"
+CASCADE_REAL_DATA=1 CASCADE_REAL_WORKDIR="$PWD/out_baseline" JULIA_THREADS=8 nice -n 10 bash ~/packages/configured-julia-root-runner.sh --project="$PWD" "$PWD/test/pipeline/test_real_reproduction.jl"
 ```
 
 Full baseline: exit 0, 350/350 assertions, 13m05.1s on all 3307 files.

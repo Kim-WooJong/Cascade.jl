@@ -1,138 +1,81 @@
 # Cascade.jl
 
-Julia framework for CMS NanoAOD analyses: data and MC event selection,
-correctionlib scale factors, systematic variations, histograms, binned
-profile-likelihood fits and ROOT-quality plots (via ROOTPlots.jl).
+A Julia framework for CMS NanoAOD analyses: selection, correctionlib-compatible
+corrections, systematic variations, histograms, binned fits and native ROOT
+plots through ROOTPlots.jl.
 
-Status: research software in active development; package version **0.1.0**.
-This is an **experimental research snapshot**, not a stable release or a final
-physics result. Fifteen standalone test areas passed across focused runs;
-**the complete package test suite is not yet verified** (bounded attempts
-stopped during batch tests). `Pkg.test()` and the supported runtime matrix
-remain unverified. Do not infer general scientific validity from these checks.
+**Version 0.1.0 · experimental research software.** Full-package testing, clean
+installation and the declared runtime matrix are not yet fully verified.
+Technical examples are not approved physics measurements. See
+[validation and support limits](docs/VALIDATION.md).
 
-Start with the [documentation index](docs/README.md),
-[development guide](CONTRIBUTING.md) and [Git preparation checklist](docs/REPOSITORY.md).
+## Quick start
 
-## Getting started from a checkout
-
-Use Julia 1.11 or later within the 1.x series as declared in `Project.toml`.
-Some optimized reader paths and compiler-level tests have narrower audited
-runtime/dependency contracts; see the development guide before enabling them.
-
-From the repository root, in the environment where you will run the analysis:
+From a checkout, using an explicitly configured execution environment:
 
 ```sh
 julia --startup-file=no --project=. -e 'using Pkg; Pkg.instantiate()'
 julia --startup-file=no --project=. bin/cascade.jl --help
 julia --startup-file=no --project=. bin/cascade.jl init my_analysis
 julia --startup-file=no --project=. bin/cascade.jl check my_analysis/analysis.toml
+# After configuring real inputs:
+julia --startup-file=no --project=. bin/cascade.jl run my_analysis/analysis.toml
 ```
 
-Instantiation downloads dependencies. The checkout declares ROOTPlots.jl from
-its `v0.2.2` Git tag in `[sources]`; use this active project rather than assuming
-a downstream package install inherits that source override. Native ROOT is
-needed for rendered plots, not for every configuration or synthetic test.
-Input ROOT files, calibration payloads and site-specific reference outputs are
-not bundled. Shipped CMS analysis configurations are reference analyses, not
-ready-to-run datasets; adapt input/payload paths before `audit` or `run`.
+The declared Julia compatibility starts at 1.11 within the 1.x series. Optimized
+reader paths have narrower audited runtime/dependency contracts. This checkout
+uses a ROOTPlots.jl Git source override in Project.toml; downstream installation
+does not automatically inherit that override. Native ROOT is required for rendered
+plots, not every synthetic/configuration test. Instantiation downloads dependencies.
 
-Cascade.jl is distributed under the [MIT License](LICENSE). External libraries,
-calibration payloads and datasets retain their respective upstream terms;
-this license does not relicense third-party material. See the retained
-[third-party copyright and license notices](THIRD_PARTY.md).
+## Configuration and examples
 
-## One configuration per analysis
+- Start from the commented [analysis template](analyses/TEMPLATE.toml) and
+  [configuration reference](docs/CONFIG.md). One TOML defines each analysis.
+- Profiles deep-merge tables and replace arrays. Use `--profile NAME` to select
+  an explicit overlay; execution optimizations are not enabled merely by installing.
+- Before processing external files, use
+  `julia --project=. bin/cascade.jl audit my_analysis/analysis.toml --workdir audit_run`.
+  [Input auditing](docs/INPUT_AUDIT.md) reports provenance and unknowns; it does not
+  certify dataset completeness or calibrated exposure.
+- The [synthetic fit/plot demonstration](examples/fit_demo/README.md) is the main
+  end-to-end example. Run generators in a disposable working copy and keep outputs
+  outside the maintained source tree. Native rendering has separate prerequisites.
+- Shipped [ttbar](analyses/ttbar_emu/README.md) and [DY](analyses/dy_mumu/README.md)
+  configurations are reference analyses requiring external inputs and payloads.
+  The separate [modern counting example](analyses/ttbar_emu/MODERN_COUNTING.md)
+  intentionally refuses execution without its required calibration/physics evidence.
 
-```sh
-julia --project=. bin/cascade.jl init my_analysis
-julia --project=. bin/cascade.jl check analyses/ttbar_emu/analysis.toml --profile sf
-julia --project=. bin/cascade.jl audit analyses/ttbar_emu/analysis.toml --profile baseline --workdir audit_run
-julia --project=. bin/cascade.jl run analyses/ttbar_emu/analysis.toml --profile baseline
-```
+## Execution and documentation
 
-The ttbar configuration defaults to the uncorrected `baseline` reference;
-`sf`, `phase2`, `jer_candidate`, and `theory_example` are opt-in profiles
-in that same file.
-Profiles deep-merge tables and replace arrays, with isolated default workdirs.
-See [configuration reference](docs/CONFIG.md) and the commented
-[template](analyses/TEMPLATE.toml). Technical-profile normalization/trigger
-priors remain placeholders, not a final physics model.
+The [documentation index](docs/README.md) covers triggers, regions, luminosity,
+theory weights, batch execution, reduced export and bounded reader modes.
+Intermediate checkpoints remain the default;
+[`execution.checkpoints = false`](docs/NO_CHECKPOINTS.md) is a fresh full-chain
+mode with final outputs only and no intermediate resume. Keep the documented
+compatibility, ownership and failure restrictions when selecting any opt-in mode.
 
-## Reusable analysis helpers
+[Architecture](docs/DESIGN.md), [development conventions](docs/CONVENTIONS.md),
+[validation](docs/VALIDATION.md) and the optional
+[benchmark diagnostics](docs/BENCHMARK_TELEMETRY.md) describe the maintained interfaces.
+Python tools are optional development/oracle utilities, not Cascade runtime dependencies.
 
-The same configuration controls optional independent-single-path trigger OR
-weights and trigger-object matching ([triggers](docs/TRIGGERS.md)), massive
-pair kinematics and region predicates with observed-channel overlap checks
-([regions](docs/REGIONS.md)), and explicit luminosity provenance plus clearly
-named yield columns ([luminosity](docs/LUMINOSITY.md)). External payload paths
-may use explicit `${ENV:NAME}` bindings. Defaults preserve the ttbar reference;
-no measured efficiency map or luminosity is inferred from a file limit.
+## External data and certification
 
-## Input audit before an analysis
+ROOT inputs, calibration payloads, raw execution records and the real CMS
+certification mask are not bundled. Obtain authorized inputs from their official
+distributors and verify their provenance. Reference configurations expect
+`analyses/ttbar_emu/Cert_Collisions2022_355100_362760_Golden.json`, or an explicitly
+configured external path. The historical reference SHA-256 is
+`ba4feb79a5b39a15a73ca0279b1bf9be4966ec816e5263f92fdee086662f73a9`.
+Do not substitute an empty/synthetic mask, disable quality selection to make a
+reference test pass, or infer luminosity completeness from a file limit.
+Configuration/reference-analysis tests requiring that mask need it supplied first.
+The historical site-pinned decoder harness is not distributed; its explicit
+opt-in request fails rather than pretending a modified input pin was validated.
 
-`cascade audit` reports missing/unmatched inputs, physical-file aliases/shared
-samples, event counts and signed generator-sum provenance. Optional sample
-metadata and explicit expected inventories live in the same TOML. Reports are
-written even when file checks fail; unknown inventory completeness and exposure
-stay unknown. See [input auditing](docs/INPUT_AUDIT.md).
+## License
 
-## Explicit theory vector weights
-
-Scale/PDF/PS member indices and normalization are declared, never guessed.
-Members merge before histogram-wise envelope/replica/Hessian reductions and fit
-template construction. Defaults stay opt-out. The ttbar theory_example profile
-uses inspected scale/PS layouts only; no PDF set is inferred. See
-[theory weights](docs/THEORY_WEIGHTS.md) and
-[validation evidence](docs/THEORY_WEIGHTS_VALIDATION.md).
-
-## Deterministic local process batches
-
-Opt-in `cascade batch plan/worker/run/status/merge` freezes file tasks and
-verifies receipts for interruption-safe retry/resume. Existing serial defaults
-and sample-wise normalization are unchanged; theory reduces only after complete
-merge. Batch rejects unsafe output path components and preexisting symlink
-ancestry; published plot indexes refer to final result files. See
-[batch execution](docs/BATCH_EXECUTION.md) and
-[validation](docs/BATCH_VALIDATION.md).
-
-## Execution modes
-
-- [Reduced ROOT RNTuple export](docs/STREAMING_REDUCED_SKIM.md) streams bounded
-  input windows and shards large originals; the NanoAOD TTree/index-only skim
-  defaults are unchanged.
-- [`execution.checkpoints = false`](docs/NO_CHECKPOINTS.md) computes a fresh
-  full chain, publishes final outputs only and cannot resume intermediate work.
-  The default remains `true`. Historical validation notes are scoped to their
-  recorded versions, settings and inputs.
-- Bounded/windowed reader optimizations are explicitly opt-in; see the
-  [execution guides](docs/README.md#execution-and-performance) for contracts
-  and limitations. Do not infer universal speedups from individual benchmarks.
-
-The independent [modern counting analysis](analyses/ttbar_emu/MODERN_COUNTING.md)
-is intentionally blocked until its configuration-bound calibration and physics
-evidence is supplied; it is not an approved cross-section result.
-
-## Development proposals and historical evidence
-
-See the [performance optimization proposal](docs/PERFORMANCE_OPTIMIZATION_PROPOSAL.md)
-and [phased implementation plan](docs/PERFORMANCE_IMPLEMENTATION_PLAN.md) for future
-systematics-heavy execution, incremental reruns, and fair RDF benchmarks.
-These are historical design references, not a current feature checklist.
-Some work has since been implemented; use the corresponding execution guides
-and scoped validation records in the documentation index for current context.
-
-The [ttbar e-mu selection/SF-to-plot benchmark plan](docs/TTBAR_EMU_SF_PLOT_BENCHMARK_PLAN.md)
-is the first proposed comparison: equivalent Cascade/C++ RDF nominal selection,
-SF/PU, one histogram/PNG, direct phase timings and workload-extension costs. It
-does not require the full workflow or broad performance refactor. Planning only;
-the proposal itself is not proof of an executed benchmark. Later validation
-records describe only their own measured workloads.
-
-## Public snapshot inputs and provenance
-
-See [publication scope](PUBLICATION.md) before running reference-analysis tests.
-The CMS certification mask is an external input, not part of the MIT code grant.
-Historical documentation uses anonymized home/host paths; raw execution records
-and private development history are not distributed. Export edits were checked
-statically, not rerun as a new full scientific validation.
+Cascade original code is under the [MIT License](LICENSE). Identified external
+portions retain the copyright and terms in [THIRD_PARTY.md](THIRD_PARTY.md).
+The project license does not relicense external libraries, calibrations or datasets.

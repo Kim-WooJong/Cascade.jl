@@ -1,12 +1,12 @@
 # Plotting examples
 
-Run on gate through the ROOTPlots wrapper (LCG ROOT for the ROOT child processes
+Run on validation environment through the ROOTPlots wrapper (LCG ROOT for the ROOT child processes
 only), with the Cascade checkout as the project. The wrapper changes into the
 ROOTPlots directory, so pass absolute paths.
 
     R=$HOME/analisis/Cascade_dev/plotting/repo      # a Cascade checkout with ROOTPlots >= 0.2.2
-    bash ~/packages/rootplots-gate.sh --project=$R $R/examples/plotting/synthetic_example.jl <outdir>
-    bash ~/packages/rootplots-gate.sh --project=$R $R/examples/plotting/ttbar_example.jl ~/analisis/ttbar_ctrl <outdir>
+    bash ~/packages/configured-julia-root-runner.sh --project=$R $R/examples/plotting/synthetic_example.jl <outdir>
+    bash ~/packages/configured-julia-root-runner.sh --project=$R $R/examples/plotting/ttbar_example.jl ~/analisis/ttbar_ctrl <outdir>
 
 - `synthetic_example.jl`: every plot and table type from deterministic synthetic
   templates (shape variations, envelope and quadrature groups, a one-sided

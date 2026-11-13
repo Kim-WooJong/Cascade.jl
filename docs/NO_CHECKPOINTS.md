@@ -1,14 +1,15 @@
 # Fresh runs without intermediate checkpoints (`execution.checkpoints = false`)
 
-Status: authored and statically reviewed only; NOT executed (no Julia parse, tests,
-ROOT input, cluster run or benchmark). Runtime correctness UNVERIFIED. No speed claim.
+Status: opt-in experimental full-chain route. Full testing of the current public
+snapshot is incomplete; see [validation status](VALIDATION.md). Focused fixtures
+and earlier real-input checks do not establish universal correctness or speed.
 
 ```toml
 [execution]
 checkpoints = false      # default true; strict Bool, also validated in inactive profiles
 ```
 
-`true` (the default, and every shipped profile) keeps the existing route unchanged:
+`true` (the default; individual configurations/profiles may override it) keeps the existing route unchanged:
 per-file skim/select/correct/histogram artifacts with `.meta.json` cache keys,
 `--force`, skipping and resume. The only effect on that route is the usual
 one-time cache invalidation, because `code_hash` covers the edited source areas.

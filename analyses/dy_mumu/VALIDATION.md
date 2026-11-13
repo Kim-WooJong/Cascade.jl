@@ -1,7 +1,7 @@
 # Configuration-only DY control: technical validation
 
 Date: 2026-11-04. Source snapshot: `115436badf22fe513af6cb00ebad3592f27df6b7`.
-Scratch: `gate:~/analisis/Cascade_dev/p4-dy`. No framework source changes,
+Scratch: `validation environment:~/analisis/Cascade_dev/p4-dy`. No framework source changes,
 commits, or pushes were made for this analysis. This report makes no physics
 claims. In particular the truncated data is not the full 1.21 fb^-1 dataset.
 
@@ -18,7 +18,7 @@ Config SHA256:
 
 ## Input inventory
 
-These are available ROOT file counts on gate, not all processed files:
+These are available ROOT file counts on validation environment, not all processed files:
 
 | Config sample | Available files |
 |---|---:|
@@ -51,9 +51,9 @@ only to [1], and the BCD pileup term is the same as ttbar.
 From the Mac repository:
 
 ```sh
-git archive HEAD | ssh gate 'mkdir -p ~/analisis/Cascade_dev/p4-dy && tar -x -C ~/analisis/Cascade_dev/p4-dy'
-rsync -az analyses/dy_mumu/ gate:analisis/Cascade_dev/p4-dy/analyses/dy_mumu/
-ssh gate 'cp ~/analisis/Cascade/Manifest.toml ~/analisis/Cascade_dev/p4-dy/Manifest.toml'
+git archive HEAD | ssh validation environment 'mkdir -p ~/analisis/Cascade_dev/p4-dy && tar -x -C ~/analisis/Cascade_dev/p4-dy'
+rsync -az analyses/dy_mumu/ validation environment:analisis/Cascade_dev/p4-dy/analyses/dy_mumu/
+ssh validation environment 'cp ~/analisis/Cascade/Manifest.toml ~/analisis/Cascade_dev/p4-dy/Manifest.toml'
 ```
 
 Each run was launched through SSH with nohup, the following command inside a
@@ -61,10 +61,10 @@ Each run was launched through SSH with nohup, the following command inside a
 
 ```sh
 cd ~/analisis/Cascade_dev/p4-dy
-/usr/bin/time -p nice -n 10 bash ~/packages/rootplots-gate.sh \
+/usr/bin/time -p nice -n 10 bash ~/packages/configured-julia-root-runner.sh \
   --project=$PWD $PWD/bin/cascade.jl run $PWD/analyses/dy_mumu/analysis.toml \
   --max-files 2 --workdir $PWD/out_smoke > smoke.log 2>&1
-/usr/bin/time -p nice -n 10 bash ~/packages/rootplots-gate.sh \
+/usr/bin/time -p nice -n 10 bash ~/packages/configured-julia-root-runner.sh \
   --project=$PWD $PWD/bin/cascade.jl run $PWD/analyses/dy_mumu/analysis.toml \
   --max-files 6 --workdir $PWD/out_bounded > bounded.log 2>&1
 ```
@@ -139,7 +139,7 @@ not proof of delivery/rendering in a user's browser.
    the leading muon fired the trigger. This remains a physics-readiness blocker.
 2. **External Golden JSON.** The baseline refers to a relative mask not present
    in a clean archive. Only three analysis files are authorized here, so the
-   configuration names the existing gate mask explicitly. Portability requires
+   configuration names the existing validation environment mask explicitly. Portability requires
    providing this external file or changing the path.
 3. **No options/profiles dependency.** At the archived schema, switching SFs off
    would require a config edit or hook choice. To avoid a second config and avoid
@@ -172,7 +172,7 @@ not proof of delivery/rendering in a user's browser.
     their pt/eta expressions in [variables] and [output]. The object-SF hook does
     not silently recover arbitrary selected-object columns. Pileup reopens the
     input branch using the persisted entry index.
-11. **Execution environment.** ROOTPlots' gate wrapper changes cwd to its package
+11. **Execution environment.** ROOTPlots' validation environment wrapper changes cwd to its package
     directory; absolute --project, script, config and --workdir paths are needed.
     Native ROOT rendering requires that wrapper/LCG environment. This is an
     execution workaround, not a code change.
@@ -198,13 +198,13 @@ same wrapper (no Python runtime/oracle was used):
 
 ```sh
 cd ~/analisis/Cascade_dev/p4-dy
-/usr/bin/time -p nice -n 10 bash ~/packages/rootplots-gate.sh \
+/usr/bin/time -p nice -n 10 bash ~/packages/configured-julia-root-runner.sh \
   --project=$PWD $PWD/verify.jl $PWD > verify.log 2>&1
 ```
 
 Exit **0**, **843/843 assertions passed**: configuration/input checks 33/33,
 smoke artifact checks 217/217, bounded checks 593/593. Wall 28.04 s, user 33.40 s,
-system 1.64 s. The script/log remain on gate, outside the repository write scope.
+system 1.64 s. The script/log remain on validation environment, outside the repository write scope.
 Checks cover inventory and inherited cross sections/branching ratios, per-sample
 file limits, finite aligned weights, both saved muons' pT/eta and ordering,
 unchanged data weights, all four MC up/down SF pairs, agreement between njet and

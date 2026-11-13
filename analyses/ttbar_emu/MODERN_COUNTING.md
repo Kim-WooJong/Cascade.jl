@@ -8,7 +8,7 @@ produced. Reference luminosity/xsecs/BRs and absent corrections are NOT approved
 
 ## Readiness
 
-On an approved gate runtime, inspect without executing events:
+On an approved validation environment runtime, inspect without executing events:
 
 ```julia
 using Cascade, TOML
@@ -64,7 +64,7 @@ fixtures marked synthetic are never evidence for the real configuration.
 
 ## Focused integration validation
 
-Run `test/modern_counting/fullmodule.jl` only as a separate approved gate process
+Run `test/modern_counting/fullmodule.jl` only as a separate approved validation environment process
 with the current full Cascade project/dependencies. It imports real Cascade and
 JSON3, calls the public `check`/`run` dispatcher, installs a test-only discovery
 trap and round-trips synthetic merged files through the typed adapter. Do not

@@ -110,7 +110,7 @@ tests. Python is oracle-only; no runtime dependency was added. The oracle
 reselects leptons from raw NanoAOD branches and checks per-event products, not
 only integrated yields.
 
-Gate artifacts/logs: `~/analisis/Cascade_dev/p2-weights/`. The SF run processed
+validation environment artifacts/logs: `~/analisis/Cascade_dev/p2-weights/`. The SF run processed
 3307 chunks; 12436 selected TTto2L2Nu and TWminusto2L2Nu events from six raw files were checked
 against correctionlib 2.8.0: all 161668 values (13 columns) were bit-identical.
 The full baseline reproduction had maximum relative difference 0 for MC
@@ -123,10 +123,10 @@ remaining integration limitations are in `VALIDATION.md`.
 `analysis.toml` remains the bit-exact genWeight-only reference;
 `analysis.toml --profile sf` adds measured lepton/pileup correction payloads;
 `analysis.toml --profile phase2` additionally enables JES/JER, the observed-data fit,
-and prefit/postfit output. Run on gate with the established ROOTPlots wrapper:
+and prefit/postfit output. Run on validation environment with the established ROOTPlots wrapper:
 
 ```sh
-JULIA_THREADS=8 bash ~/packages/rootplots-gate.sh --project=. bin/cascade.jl run analyses/ttbar_emu/analysis.toml --profile phase2
+JULIA_THREADS=8 bash ~/packages/configured-julia-root-runner.sh --project=. bin/cascade.jl run analyses/ttbar_emu/analysis.toml --profile phase2
 ```
 
 The combined configuration is a technical demonstration, **not a finalized

@@ -1,15 +1,19 @@
 # Fit and plot demonstrations
 
-Run on gate (native ROOT through the ROOTPlots wrapper for the plots; pass absolute paths).
+Use an existing Julia environment with native ROOT configured for ROOTPlots.
+Set R to an absolute disposable working copy and W to an unused external output
+directory. The input generator writes analyses/fit_demo/inputs inside R, so do
+not run it in the maintained source checkout. This is an illustrative synthetic
+workflow, not a validated clean-install claim.
 
-    R=<Cascade checkout>; W=<work directory>
-    RUN="bash ~/packages/rootplots-gate.sh --project=$R"
+    R=/absolute/path/to/disposable/Cascade.jl
+    W=/absolute/path/to/new-results
 
 ## Synthetic end-to-end demo (`analyses/fit_demo`)
 
-    $RUN $R/examples/fit_demo/make_inputs.jl                       # analyses/fit_demo/inputs/*.cols
-    $RUN $R/bin/cascade.jl run $R/analyses/fit_demo/analysis.toml --workdir $W/fit_demo
-    $RUN $R/examples/fit_demo/pyhf_check.jl $W/fit_demo/fit/workspace.json
+    julia --startup-file=no --project="$R" $R/examples/fit_demo/make_inputs.jl                       # analyses/fit_demo/inputs/*.cols
+    julia --startup-file=no --project="$R" $R/bin/cascade.jl run $R/analyses/fit_demo/analysis.toml --workdir $W/fit_demo
+    julia --startup-file=no --project="$R" $R/examples/fit_demo/pyhf_check.jl $W/fit_demo/fit/workspace.json
 
 Two simulated processes (`signal`, `background`) and pseudo-data generated with the
 signal scaled by mu = 1.2 (see `lib/write_fit_demo_inputs.jl`). The chain runs
@@ -28,7 +32,7 @@ Append `ttbar_fit.toml` to `analyses/ttbar_emu/analysis.toml` (or to a copy next
 relative paths still resolve) and run from the systematics step on an existing merged
 store:
 
-    $RUN $R/bin/cascade.jl run <analysis with [fit]> --workdir <ttbar workdir> --from systematics
+    julia --startup-file=no --project="$R" $R/bin/cascade.jl run <analysis with [fit]> --workdir <ttbar workdir> --from systematics
 
 The luminosity and cross-section uncertainties of `ttbar_fit.toml` are placeholders
 (flagged in the fit result and summary), not the analysis' systematic model.

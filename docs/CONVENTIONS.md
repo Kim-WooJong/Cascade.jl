@@ -1,25 +1,32 @@
-# Development conventions
+# Contribution conventions
 
-These rules apply to every contribution.
+1. Use English for code, docstrings and repository documentation. Document exported
+   APIs. Keep the core Julia-only; Python is allowed for optional external oracles
+   and developer measurement tools, not as an analysis runtime requirement.
+2. Use one file per public function/feature (with private helpers), or one type
+   with constructors, grouped under `src/<Area>`. Keep module/script entry points
+   limited to includes, exports and calls; communicate through exported area APIs.
+   Prefer small, reviewable changes over unrelated refactors.
+3. Put tests under `test/<area>`, with a thin runtests.jl entry where appropriate.
+   Keep synthetic fixtures independent of external analysis data; enable real-input
+   and oracle checks explicitly. A flag does not supply the missing input or license.
+4. Preserve selected-entry order, primitive precision, cutflows, sumw/sumw2,
+   signed normalization populations, mask behavior, ownership and failure paths.
+   Establish reference parity before enabling a physics change. Do not weaken an
+   admission check or replace a real certification mask to make tests pass.
+5. Treat optimized readers as version/platform-specific contracts. Retain opt-in
+   defaults, conservative fallback and cleanup rules. Do not infer speed, memory
+   safety or physical validity from recording fakes or one warm timing.
+6. Keep ROOT inputs, generated outputs/logs, credentials, local paths and local
+   Manifests out of source contributions. Preserve upstream notices in
+   [THIRD_PARTY.md](../THIRD_PARTY.md); external payload/data terms are separate.
+7. Report exact validation scope, prerequisites, skipped checks and failures.
+   Follow [VALIDATION.md](VALIDATION.md), not historical execution receipts.
+   Full-suite, Pkg.test, fresh-install and version-matrix status remains unverified
+   until independently completed for the current tree.
+8. Use semantic versioning for verified changes: patch fixes, compatible minor
+   features and breaking major changes. Keep authorship factual; do not add tool
+   or assistant attribution to code, documentation or commit authorship.
 
-1. Language: Julia only. Python appears only as an external test oracle
-   (e.g. correctionlib on a validation host) and never as a runtime dependency.
-2. One file = one function/feature. A file holds one public function (with its
-   private helpers) or one type with its constructors. Related files are grouped
-   in a folder per area (`src/<Area>/`).
-3. Entry files only include and call. `src/Cascade.jl`, `src/<Area>/<Area>.jl`
-   and CLI/script entry points contain includes, exports and calls only — no logic.
-4. Each area is its own submodule (`Cascade.<Area>`) and depends on other areas
-   only through their exported API.
-5. Tests live in `test/<area>/runtests.jl` (entry, includes only) plus one test
-   file per feature. Tests must not need external analysis data unless guarded by an env flag
-   (`CASCADE_REAL_DATA=1`).
-6. English for code, docstrings and docs. Every exported function has a docstring.
-7. No AI tool or assistant names in authorship, commits, comments or docs.
-   Author: Kim-WooJong.
-8. Keep source checkouts free of execution outputs, logs, ROOT inputs and local
-   Manifests. Use a separate validation/execution environment.
-9. Numbers are reproduced, not trusted: a refactor must reproduce reference
-   yields/cutflows exactly before physics changes are enabled.
-10. Versioning: patch = fix, minor = compatible feature, major = breaking; bump
-    per verified group of changes.
+See [architecture](DESIGN.md), [configuration](CONFIG.md) and the
+[documentation index](README.md) for current contracts.

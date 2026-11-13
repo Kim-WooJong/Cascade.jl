@@ -45,13 +45,13 @@ normalization priors are labelled placeholders. The two nested regions are
 not jointly fitted (their observations overlap). Plots include both regions.
 No shape/theory/nonprompt treatment or physics interpretation is supplied.
 
-## Running on gate
+## Running on validation environment
 
 From the scratch directory (absolute paths required because the wrapper changes
 its working directory):
 
 ```sh
-JULIA_THREADS=4 nice -n 10 bash ~/packages/rootplots-gate.sh \
+JULIA_THREADS=4 nice -n 10 bash ~/packages/configured-julia-root-runner.sh \
   --project="$PWD" "$PWD/bin/cascade.jl" run \
   "$PWD/analyses/dy_mumu/analysis.toml" --max-files 2 --workdir "$PWD/out_smoke"
 # Repeat with --max-files 6 --workdir "$PWD/out_bounded".
@@ -59,7 +59,7 @@ JULIA_THREADS=4 nice -n 10 bash ~/packages/rootplots-gate.sh \
 
 The Golden JSON remains an external input; edit `paths.certification` or bind
 it explicitly to `${ENV:CASCADE_GOLDEN_JSON}`. Sample globs and POG payloads
-also require gate storage/CVMFS.
+also require validation environment storage/CVMFS.
 `--max-files` truncates each sample independently and normalizes MC using only
 that subset's generator sum. Truncated data is not luminosity-complete at the
 configured luminosity. Therefore neither yield ratios nor the fitted POI are
@@ -67,4 +67,4 @@ closure/physics statements. The default luminosity metadata records this unknown
 exposure; optional certified-LS tracking requires a per-LS luminosity table and
 an explicit completeness assumption ([details](../../docs/LUMINOSITY.md)).
 See [VALIDATION.md](VALIDATION.md) for the historical Phase-4 runs (massless),
-and [Phase-5 validation](../../docs/PHASE5_VALIDATION.md) for the current helpers.
+and [Phase-5 validation](../../docs/VALIDATION.md) for the current helpers.

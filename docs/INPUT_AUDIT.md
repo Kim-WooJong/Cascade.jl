@@ -137,7 +137,7 @@ sidecar and manifest SHA256 fields. Reduced opening is not header-only: it
 validates provenance mapping and bytes. No event run/LS exposure is measured or
 completeness inferred by audit. An operational audit pass is not a certificate
 of retention/selection compatibility; pipeline preflight enforces that separate
-contract. See REDUCED_SKIM.md and REDUCED_SKIM_VALIDATION.md.
+contract. See REDUCED_SKIM.md and VALIDATION.md.
 
 Schema2 reduced_rntuple_group inputs are logical descriptors. Audit validates
 the complete ordered shard set/checksums and actual bounded headers/maps before

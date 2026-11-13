@@ -45,28 +45,28 @@ No Histograms source changes were needed. ROOTPlots adapters remain available.
 No Project.toml dependency or Cascade.jl include-order change is required:
 phase 1 already declares dependencies and loads Histograms before Fit/Plotting.
 
-## Gate execution
+## validation environment execution
 
 Scratch: `/path/to/user/analisis/Cascade_dev/p2-fitplot`, based on `c7696ba`, with
 fit/plot scope overlaid. The integrated copy was not modified. Logs and outputs
-are in the scratch, not the Mac source repository. Julia 1.12.2; ROOTPlots gate
+are in the scratch, not the Mac source repository. Julia 1.12.2; ROOTPlots validation environment
 wrapper, four Julia threads, nice level 10. Full integration with concurrent
 weight/shape/core edits remains the coordinator's responsibility.
 
-Commands (executed on gate; `D=$HOME/analisis/Cascade_dev/p2-fitplot`):
+Commands (executed on validation environment; `D=$HOME/analisis/Cascade_dev/p2-fitplot`):
 
 ```sh
-nice -n 10 env JULIA_THREADS=4 bash ~/packages/rootplots-gate.sh --project=$D $D/t_fit.jl
-nice -n 10 env JULIA_THREADS=4 bash ~/packages/rootplots-gate.sh --project=$D $D/t_plotting.jl
-nice -n 10 env JULIA_THREADS=4 bash ~/packages/rootplots-gate.sh --project=$D $D/t_pipeline.jl
-nice -n 10 env JULIA_THREADS=4 bash ~/packages/rootplots-gate.sh --project=$D $D/examples/fit_demo/make_inputs.jl
-nice -n 10 env JULIA_THREADS=4 bash ~/packages/rootplots-gate.sh --project=$D $D/bin/cascade.jl run $D/analyses/fit_demo/analysis.toml --workdir $D/work_demo
+nice -n 10 env JULIA_THREADS=4 bash ~/packages/configured-julia-root-runner.sh --project=$D $D/t_fit.jl
+nice -n 10 env JULIA_THREADS=4 bash ~/packages/configured-julia-root-runner.sh --project=$D $D/t_plotting.jl
+nice -n 10 env JULIA_THREADS=4 bash ~/packages/configured-julia-root-runner.sh --project=$D $D/t_pipeline.jl
+nice -n 10 env JULIA_THREADS=4 bash ~/packages/configured-julia-root-runner.sh --project=$D $D/examples/fit_demo/make_inputs.jl
+nice -n 10 env JULIA_THREADS=4 bash ~/packages/configured-julia-root-runner.sh --project=$D $D/bin/cascade.jl run $D/analyses/fit_demo/analysis.toml --workdir $D/work_demo
 # Scratch-only combined ttbar analysis; no source-repository ttbar edit:
 cat $D/analyses/ttbar_emu/analysis.toml $D/examples/fit_demo/ttbar_fit.toml > $D/analyses/ttbar_emu/analysis_fit.toml
-nice -n 10 env JULIA_THREADS=4 bash ~/packages/rootplots-gate.sh --project=$D $D/bin/cascade.jl run $D/analyses/ttbar_emu/analysis_fit.toml --workdir $D/work_real --from systematics
-nice -n 10 env JULIA_THREADS=4 bash ~/packages/rootplots-gate.sh --project=$D $D/examples/fit_demo/pyhf_check.jl $D/work_real/fit/workspace.json
-nice -n 10 env JULIA_THREADS=4 OPENBLAS_NUM_THREADS=1 bash ~/packages/rootplots-gate.sh --project=$D $D/examples/fit_demo/pyhf_check.jl $D/work_demo/fit/workspace.json
-nice -n 10 env JULIA_THREADS=4 CASCADE_PYHF_ORACLE=1 CASCADE_REAL_DATA=1 CASCADE_REAL_WORKDIR=$D/work_real OPENBLAS_NUM_THREADS=1 bash ~/packages/rootplots-gate.sh --project=$D $D/test/runtests.jl
+nice -n 10 env JULIA_THREADS=4 bash ~/packages/configured-julia-root-runner.sh --project=$D $D/bin/cascade.jl run $D/analyses/ttbar_emu/analysis_fit.toml --workdir $D/work_real --from systematics
+nice -n 10 env JULIA_THREADS=4 bash ~/packages/configured-julia-root-runner.sh --project=$D $D/examples/fit_demo/pyhf_check.jl $D/work_real/fit/workspace.json
+nice -n 10 env JULIA_THREADS=4 OPENBLAS_NUM_THREADS=1 bash ~/packages/configured-julia-root-runner.sh --project=$D $D/examples/fit_demo/pyhf_check.jl $D/work_demo/fit/workspace.json
+nice -n 10 env JULIA_THREADS=4 CASCADE_PYHF_ORACLE=1 CASCADE_REAL_DATA=1 CASCADE_REAL_WORKDIR=$D/work_real OPENBLAS_NUM_THREADS=1 bash ~/packages/configured-julia-root-runner.sh --project=$D $D/test/runtests.jl
 ```
 
 The first targeted fit run had 290 passes; plotting had 187 passes and one skip.
@@ -264,7 +264,7 @@ Exact final command:
 
 ```sh
 D=$HOME/analisis/Cascade_dev/p2-fitplot
-nice -n 10 env JULIA_THREADS=4 CASCADE_PYHF_ORACLE=0 CASCADE_REAL_DATA=1 CASCADE_REAL_WORKDIR=$D/work_real OPENBLAS_NUM_THREADS=1 bash $HOME/packages/rootplots-gate.sh --project=$D $D/test/runtests.jl
+nice -n 10 env JULIA_THREADS=4 CASCADE_PYHF_ORACLE=0 CASCADE_REAL_DATA=1 CASCADE_REAL_WORKDIR=$D/work_real OPENBLAS_NUM_THREADS=1 bash $HOME/packages/configured-julia-root-runner.sh --project=$D $D/test/runtests.jl
 ```
 
 The pseudo-inverse Hessian warning is from the intentional zero-observation,

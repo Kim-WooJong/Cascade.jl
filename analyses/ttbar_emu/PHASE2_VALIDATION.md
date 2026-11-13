@@ -13,7 +13,7 @@ and stale correction payload caches. Correct keys include Systematics code and p
 shape parsed-cache keys include content SHA256.
 
 ## Full integrated suite
-Gate `~/analisis/Cascade_dev/p2-integrated/full.log`: **48,013/48,013 passed, EXIT=0**.
+validation environment `~/analisis/Cascade_dev/p2-integrated/full.log`: **48,013/48,013 passed, EXIT=0**.
 
 | Area | Passed |
 |---|---:|
@@ -30,7 +30,7 @@ Gate `~/analisis/Cascade_dev/p2-integrated/full.log`: **48,013/48,013 passed, EX
 
 ```sh
 D=$HOME/analisis/Cascade_dev/p2-integrated
-nice -n 10 env JULIA_THREADS=8 OPENBLAS_NUM_THREADS=1 CASCADE_PYHF_ORACLE=0 CASCADE_REAL_DATA=1 CASCADE_REAL_WORKDIR="$D/work_baseline" bash ~/packages/rootplots-gate.sh --project="$D" "$D/test/runtests.jl"
+nice -n 10 env JULIA_THREADS=8 OPENBLAS_NUM_THREADS=1 CASCADE_PYHF_ORACLE=0 CASCADE_REAL_DATA=1 CASCADE_REAL_WORKDIR="$D/work_baseline" bash ~/packages/configured-julia-root-runner.sh --project="$D" "$D/test/runtests.jl"
 ```
 
 Fresh selection processed all 3307 files (765.28 seconds), not just cached artifacts.
@@ -39,7 +39,7 @@ Fresh selection processed all 3307 files (765.28 seconds), not just cached artif
 and cutflow relative difference is 0.0.
 
 ## Combined real-data technical test
-`t_real_combined.jl`, `real_combined.log`, `work_combined_subset` under the same gate scratch:
+`t_real_combined.jl`, `real_combined.log`, `work_combined_subset` under the same validation environment scratch:
 78 ROOT files, 23,279,715 events, six files per each of 13 samples.
 SF+JES/JER through fit/plot completed EXIT=0; 79 plot/table output files.
 Fit took 31.85 seconds, plot 90.57 seconds. The selected-jet continuous-SF
@@ -51,7 +51,7 @@ maximum parameter difference/sigma 4.32956e-5, relative Hesse-error difference
 1.88571e-5, NLL difference -1.65651e-9.
 
 ```sh
-nice -n 10 env JULIA_THREADS=4 OPENBLAS_NUM_THREADS=1 bash ~/packages/rootplots-gate.sh --project="$D" "$D/examples/fit_demo/pyhf_check.jl" "$D/work_combined_subset/fit/workspace.json"
+nice -n 10 env JULIA_THREADS=4 OPENBLAS_NUM_THREADS=1 bash ~/packages/configured-julia-root-runner.sh --project="$D" "$D/examples/fit_demo/pyhf_check.jl" "$D/work_combined_subset/fit/workspace.json"
 ```
 
 The truncated data/full configured luminosity makes the subset fit normalization
@@ -68,8 +68,8 @@ The earlier correct-cache regression passed 465 assertions in
 
 Final source/test/analysis delivery to `~/analisis/Cascade` was checked against
 Mac: 389 files SHA256-identical, no extra source files. Old duplicate Plotting
-histogram files were removed; gate Manifest and runtime outputs were preserved.
-Tested snapshot inventories remain in the gate scratch directories.
+histogram files were removed; validation environment Manifest and runtime outputs were preserved.
+Tested snapshot inventories remain in the validation environment scratch directories.
 
 ## Limitations
 - Combined all-sample SF+shape processing was bounded to 78 files, not all 3307.
@@ -81,4 +81,4 @@ Tested snapshot inventories remain in the gate scratch directories.
   and validate the final physics systematic model before interpretation.
 - No b-tag selection here; generic tagged/untagged efficiency method unvalidated.
 - Native plot output is tested; human visual approval is not claimed.
-- Source only on Mac; all runtime output remains gate. No remote push.
+- Source only on Mac; all runtime output remains validation environment. No remote push.

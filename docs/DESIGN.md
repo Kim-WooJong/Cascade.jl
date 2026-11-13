@@ -1,218 +1,150 @@
-# Cascade.jl — Design Draft (v0)
+# Cascade architecture
 
-Status: draft, 2026-11-04. Phase 0 (design). No code yet.
+Cascade is an implemented, experimental Julia framework for CMS NanoAOD analysis.
+This overview describes the current organization, not a phased implementation
+plan. [Configuration](CONFIG.md) defines the settings; [validation](VALIDATION.md)
+defines what has and has not been checked.
 
-## Goal
-Julia framework for a complete CMS NanoAOD analysis: data + MC -> selection ->
-corrections/scale factors -> systematic variations -> histograms -> profile
-likelihood fit -> plots. The ttbar e-mu control analysis (AN-22-103) is the first
-validation analysis and must reproduce existing numbers exactly before any
-correction is enabled (>=1 jet: data 5905, MC 6434.9316; >=2 jets: data 3836,
-MC 4235.2102; per-sample cutflows in out_cutflow/).
+## Data flow and modules
 
-## Scope decisions (the maintainer, 2026-11-04)
-- Input: CMS NanoAOD only at first. Input access goes through an
-  `AbstractEventSource` interface so other formats/experiments can be added.
-- Statistical fit included from the start (binned profile likelihood).
-- Development/execution on gate; Mac holds the Git original only.
-- Every step can be run alone, from a given step, or as a full chain.
-- Corrections: native Julia implementation of the correctionlib JSON schema
-  (no Python at runtime). Python correctionlib 2.8.0 (LCG_110 on gate) is used
-  only as a test oracle.
-- Plotting and histogram rendering: ROOTPlots.jl (Hist1D/2D with sumw2).
+Config → IO → Objects / Selection → Corrections → Histograms / Systematics /
+Fit / Plotting → Pipeline orchestration.
 
-## Pipeline steps
-| Step | Input | Output (artifact) |
-|---|---|---|
-| skim | NanoAOD files | input index: file signatures, event counts, generator-weight sums |
-| select | skim + analysis config | per-chunk event table (kept events, stage, base weight, histogram values), cutflow |
-| correct | select + correction sets | per-event weight columns (nominal + up/down) |
-| histogram | select + correct | per-chunk histogram store (region x sample x variation x variable) |
-| merge | chunk stores | merged store, scaled by sigma*L/sum(genWeight) |
-| systematics | merged store | template set, symmetrized/smoothed variations |
-| fit | templates + fit config | fit result (POIs, nuisances, covariance, pulls/impacts) |
-| plot | merged store / fit result | data/MC plots with uncertainty bands, tables |
+| Module | Responsibility |
+|---|---|
+| Config | Resolve TOML paths/profiles/options, construct typed definitions and validate structure |
+| IO | AbstractEventSource, registered formats, NanoAOD through UnROOT, flat/Jagged columns, certification masks, column files and reduced inputs |
+| Objects / Selection | Object filtering/cleaning/sorting, restricted expression compilation, staged reads, ordered cuts/regions and selected EventTables |
+| Corrections | Native Julia correctionlib schema-v2 evaluation, including formula, compound and deterministic random nodes |
+| Histograms | BinnedHist / HistogramStore with edges, sumw and sumw2, merging, scaling and transport |
+| Systematics | Apply declared MC weight terms, explicit theory members and object-varying shapes; build histogram variations/templates |
+| Fit | Binned likelihood models, fits, profile inference and covariance-aware reports / HistFactory workspace export |
+| Plotting | Histogram adapters, uncertainty bands/tables and ROOTPlots rendering |
+| Audit | Input inventories, physical-file aliases, event counts and normalization provenance |
+| Pipeline | CLI, step planning, artifact keys, scheduling, hooks, batch/reduced workflows and publication |
 
-CLI sketch:
-    cascade run analysis.toml
-    cascade run analysis.toml --steps histogram,merge
-    cascade run analysis.toml --from fit
-    cascade run analysis.toml --only plot --samples TTto2L2Nu
+The fit implements a binned Poisson likelihood with normfactors, normsys,
+histosys interpolation and MC-statistical terms. Configured nuisance names and
+correlations define templates; missing sample-specific variations use nominal
+templates. Postfit yield/plot propagation retains cross-bin/sample covariance.
+Correction evaluators cover schema-v2 nodes and a supported TFormula subset, not
+arbitrary formulas. External oracle comparisons require exact agreement or the
+declared tolerance (the real SF comparison uses relative tolerance 1e-12).
 
-Each artifact records hashes of its inputs, its config section and the code
-version. A step whose hashes are unchanged is skipped (make-like). Work is split
-in file chunks so failed chunks can be rerun alone and chunks run in parallel.
+Python correctionlib and pyhf are optional external test oracles, not analysis
+runtime dependencies. ROOTPlots provides the rendering boundary; native ROOT is
+required to render images, not to evaluate every synthetic/configuration test.
 
-## Module layout (planned)
-- `Cascade.Config`      TOML analysis definition and validation
-- `Cascade.IO`          AbstractEventSource, NanoAOD source (UnROOT), lumi mask
-- `Cascade.Objects`     object selection, overlap removal
-- `Cascade.Selection`   regions, cutflow
-- `Cascade.Corrections` correctionlib schema v2 evaluator (pure Julia)
-- `Cascade.Systematics` weight-type and shape-type (object-varying) variations
-- `Cascade.Histograms`  histogram store (thin, ROOTPlots-convertible; see below)
-- `Cascade.Fit`         binned likelihood model, minimization, impacts
-- `Cascade.Plotting`    ROOTPlots-based data/MC, bands, ratio panels
-- `Cascade.Pipeline`    step graph, artifact cache, CLI
+## Pipeline and artifacts
 
-## Core implementation (Phase 1: Config, IO, Objects, Selection, Histograms, Pipeline)
+The checkpointed execution order is:
 
-### Analysis definition (TOML)
-One file per analysis (`analyses/<name>/analysis.toml`). Sections:
-`[analysis]` (name, lumi_pb, workdir), `[paths]` (`${name}` substitution in file
-patterns), `[[samples]]` (name, kind mc|data, files globs, format, xsec_pb,
-branching_ratio, stream, group), `[data_quality]` (run_range, golden_json),
-`[triggers]` (groups, streams, priority, mc), `[[objects]]` (name, collection,
-cut, clean = {against, dr}, sort_by), `[variables]`, `[weights]` (mc/data factor
-expressions, expression variations), `[[cuts]]` (sequential; `only = "data"|"mc"`),
-`[[regions]]` (`after` = last cut of the region), `[[histograms]]` (edges | range
-| linspace, values, when, regions), `[merge]` (yield_variable), `[hooks]`.
-Sections owned by other areas (`corrections`, `systematics`, `fit`, `plot`) are
-kept raw and passed to their hooks. Arrays of tables keep a defined order.
+| Step | Main output |
+|---|---|
+| skim | Input index, signatures, event counts and original generator sums |
+| select | Per-chunk .cols EventTable, cutflow and original entry indices |
+| correct | Selected-event nominal / varied weight columns |
+| histogram | Chunk histogram stores |
+| merge | Ordered sample stores, normalized/raw histograms, yields and cutflows |
+| systematics | Fit-ready templates |
+| fit | Configured likelihood results and reports |
+| plot | Plots, tables and output index |
 
-### Expression language
-Expressions are Julia syntax, parsed with `Meta.parse` and translated by a
-whitelist (arithmetic, comparisons incl. chains, `&& || ! ?:`, bit ops, math
-functions, `deltaR`, `mass_massless`). Object scope: bare names are fields of the
-collection (`pt` -> `Electron_pt`). Event scope: branches (`genWeight`),
-builtins `trigger` (stream logic) and `lumimask` (run range + Golden JSON),
-variables (inlined), `length(obj)`, `obj.field[k]` (out of range = error, so
-gate with `when`). Each expression becomes a Julia function compiled once per
-sample kind (`Core.eval` into `Selection.Kernels`, called via `invokelatest` at
-the chunk boundary); cuts are a tuple walked by recursion, so the event loop is
-type-stable. Arithmetic keeps the input precision (Float32 NanoAOD columns are
-compared to Float64 literals exactly as the reference code did).
+The ordinary chunk is an input file. Shape selections produce label-specific
+tables and weights; data is unchanged by MC scale factors/shapes. JES/JER and
+scale variations rederive objects/selection; nominal JER smearing is opt-in
+(default false), and optional MET propagation follows configured thresholds.
+Nominal theory members do not create shape × theory products. Hooks use CorrectionContext or
+StepContext at their documented stage boundaries; a custom wrapper is not
+implicitly trusted as a built-in hook.
 
-### Event sources and reading
-`IO.AbstractEventSource`: `nevents`, `column_names`, `read_columns(names;
-needed)`, `gen_weight_sum`, `source_signature`, `close_source`; formats are
-registered with `register_source_format!` (`nanoaod` via UnROOT, `cols` =
-Cascade column files). Columns are `Vector{T}` or `Jagged{T}` (flat content +
-offsets). Select reads, for all events, only the columns of the object-free
-leading cuts (lumimask, trigger) and weights; object columns are read with a
-`needed` mask so baskets without surviving events are not decompressed (jagged
-branches stay aligned through the `nX` counter branches).
+Cascade .cols files store typed arrays with a header; they are distinct from
+ROOT. The default skim indexes inputs. The separate reduced export writes ROOT
+RNTuple bundles, **not** NanoAOD TTree output. Streaming export can split an
+original into physical shards while retaining its logical population ledger.
+See [reduced skim](REDUCED_SKIM.md) and [streaming export](STREAMING_REDUCED_SKIM.md).
 
-### Artifacts, keys and caching
-Layout under the workdir: `skim/<sample>.json`, `select/<sample>/<chunk>.cols`,
-`correct/<sample>/<chunk>.cols`, `histogram/<sample>/<chunk>.json`,
-`merge/{histograms.json, histograms_raw.json, samples.json, yields.tsv,
-cutflow/<sample>.tsv}`, `systematics/templates.json`, `fit/result.json`,
-`plot/index.json`. One chunk = one input file (id = hash of its path). Every
-artifact has `<artifact>.meta.json` whose `key` hashes: input signature (path,
-size, mtime) or upstream keys, the relevant config sections (canonical JSON),
-the source of the code areas involved (and Julia version) and the hook id. A
-step is skipped when the key is unchanged; e.g. changing histogram binning
-reruns histogram/merge only (select hashes only histogram values/when).
-Chunks run on `Threads.nthreads()` tasks; merges always proceed in sorted file
-order, so results do not depend on scheduling and the floating-point summation
-order equals the reference per-file scripts.
+Checkpointing defaults on. The explicit
+[no-checkpoint mode](NO_CHECKPOINTS.md) computes a fresh in-memory chain, publishes
+final outputs and cannot resume intermediate work. Other execution modes have
+separate admission/fallback rules; they do not silently change the scientific
+analysis definition. See the [execution guides](README.md).
 
-Intermediate format (resolved): Cascade column files (`.cols`: magic, JSON
-header, raw little-endian arrays; bit-exact, no extra dependency). The skim step
-indexes inputs. The distinct opt-in reduce command writes standalone genuine
-ROOT RNTuple bundles with UnROOT >=0.11.11; this is not NanoAOD TTree output.
-See REDUCED_SKIM.md.
+## Configuration, expressions and cache identity
 
-### Histogram store (resolved)
-`HistogramStore`: `Dict{HistKey(region, sample, variation, variable) =>
-BinnedHist(edges, sumw, sumw2)}` + `meta`. Fill: underflow dropped, overflow in
-the last bin, NaN = no value. Mergeable (`merge_store!`), scalable
-(`scale_store!`), JSON-serialised with shortest round-trip floats (bit-exact).
-Variation labels: `nominal`, `<name>Up`, `<name>Down`. No ROOTPlots dependency:
-`hist_arrays(h)` gives `(edges, sumw, sumw2)` for `ROOTPlots.Hist1D` in Plotting.
-MC normalisation: `(xsec_pb * branching_ratio) * lumi_pb / sum(genEventSumw)`.
+One analysis TOML resolves one selected profile before consumers see it. Tables
+deep-merge; arrays replace. Unused profile definitions do not enter effective
+physics section keys. Explicit workdir overrides are exact; default workdirs
+isolate selected profiles. Expressions use parsed Julia syntax with a restricted
+operation set, not arbitrary analysis text evaluation. Collection order,
+short-circuiting and guards matter: an out-of-range object access is an error,
+not an automatically supplied value. Preserve input precision and event order.
 
-### Hooks for other areas
-`Pipeline.register_hook!(step, f; id)` or `[hooks] <step> = "Module.function"`:
-- correct: `f(::CorrectionContext) -> Dict("nominal" => w, "<n>Up" => ..., ...)`
-  (context: config, sample, source_path, event table with `entry` indices);
-- systematics: `f(::StepContext, merged::HistogramStore) -> HistogramStore`;
-- fit: `f(::StepContext, templates::HistogramStore) -> Dict` (JSON);
-- plot: `f(::StepContext, merged::HistogramStore, fit_result) -> Vector{String}`.
-Defaults: base weight + expression variations; identity; configured likelihood fit;
-configured plots/tables. Without a [fit] section, fitting is skipped.
+Artifact sidecars bind relevant input signatures/upstream keys, resolved config
+sections, code-area hashes (including Julia version) and hook identity. Changing
+histogram binning need not reread unchanged selection values; changing source
+code invalidates the relevant code key. Keys are dependency checks, not a blanket
+claim of cryptographic input immutability: ordinary file signatures and stricter
+reduced-input inventories have different contracts.
 
-## Corrections (correctionlib in Julia)
-Implement schema v2 node types: Category, Binning (flow: clamp/error/value),
-MultiBinning, Formula (TFormula subset parsed to Julia expressions),
-FormulaRef, Transform, HashPRNG, CompoundCorrection, plus gz JSON loading.
-Validation: random and edge-point inputs evaluated by Julia and by Python
-correctionlib for every correction in the 2022_Summer22 files used
-(MUO muon_Z, EGM electron/electronHlt, LUM puWeights, BTV btagging,
-JME jet_jerc/jetvetomaps); exact or <=1e-12 relative agreement required.
+Reader widths and related execution-only options are excluded from scientific
+selection section keys where documented. Full-config/batch/reduced contracts
+still see them. A cache hit preserves the artifact's original generation
+diagnostics; it must not pretend the requested new engine ran. Reduced integrity
+and extraction preflights still execute at their required stage boundaries,
+including before applicable cache returns. No persistent cross-invocation trust
+cache is implied.
 
-## Systematics
-- Weight type: one event loop fills nominal + all up/down weights.
-- Shape type (JES/JER, lepton scale): object collections are re-derived per
-  variation; selection runs once per variation on shared columns.
-- Naming follows nuisance names used by the fit config.
+## Ordering and normalization
 
-## Fit
-Binned Poisson likelihood with normfactors, normsys (log-normal),
-histosys (shape interpolation), Barlow-Beeston-lite MC stat. Outputs: best fit,
-profile scans, pulls, impacts, postfit plots. Model format kept close to the
-HistFactory/pyhf JSON concepts so results can be cross-checked with pyhf/combine.
+Scheduling may be concurrent; scientific replay and merges retain defined
+sample/file/event order rather than task completion order. Floating-point
+addition order is observable and must not be changed casually. Histogram stores
+retain sumw and sumw2; underflow is dropped, overflow goes into the last bin and
+NaN is not a histogram value.
 
-## Open questions
-- Intermediate format: resolved (Cascade column files, see Core implementation).
-- Histogram store: resolved (thin store, ROOTPlots-convertible, see above).
-- Minimizer choice for the fit (Optim.jl vs own Newton with AD).
+MC normalization uses
 
+~~~text
+(xsec_pb × branching_ratio) × lumi_pb / signed original-population generator sum
+~~~
 
-## Phase-2 integrated configuration
+Data remains unscaled by MC normalization. Original Runs-derived denominators
+are not selected-event counts. Reduced shards share their original logical
+population; complete group ledgers prevent repeated per-shard denominators.
+Theory members merge before envelope/replica/Hessian reductions and fit template
+construction. Dataset completeness and calibrated exposure are not inferred from
+a file limit or a successful synthetic run. See [luminosity](LUMINOSITY.md),
+[theory weights](THEORY_WEIGHTS.md) and [input auditing](INPUT_AUDIT.md).
 
-`[corrections.sets]` resolves correctionlib payload paths;
-`[[corrections.object_sf]]`, `[[corrections.event_weight]]`, and
-`[[corrections.flat]]` define correlated named weight products. Set the correct
-hook to `Cascade.Systematics.apply_corrections`. Data is never reweighted by
-these MC scale factors.
+## Ownership and bounded execution
 
-Each `[[shape_variations]]` entry names a collection and kind (`jes`, `jer`,
-`scale`). Optional `samples` limits MC applicability; data is unchanged.
-JES binds a correction source; JER binds resolution, scale-factor, and smearing
-payloads. Generic scales use `up`/`down` expressions. Optional `met` propagates
-jet momentum differences above `met_min_pt`. `nominal=true` enables nominal
-JER smearing; its default false intentionally preserves legacy results.
+Sources, mutable ROOT streams, object buffers and decoder scratch have explicit
+owners. A borrower must not close its owner's source or share mutable stream
+state concurrently. Invocation-local correction reuse shares a lazy source, not
+partial masked columns or row caches. Parallel column slots own separate handles;
+detached basket workers receive owned payloads without ROOTFile/metadata access.
+Worker scopes join before owned resources close or errors escape.
 
-Selection reads columns once per chunk, reruns selection for each variation,
-and writes `select/<sample>/<chunk>.<label>.cols`. Correct runs the hook on each
-varied table and writes its nominal weights under the matching label in
-`correct/`. `CorrectionContext.variation` exposes that label. Merge emits
-`shape_yields.tsv` and `cutflow_shape/<sample>/<label>.tsv`. Sample-specific
-shape configuration and payload SHA256 fingerprints enter selection keys.
+Queue/window accounting bounds admitted logical work where specified, not the
+entire process heap, GC retention, mmap residency or RSS. Full-file paths remain
+eager unless a documented windowed route is selected. Unsupported inputs fall
+back or fail according to that route; corruption in an admitted supported format
+must not be disguised as a successful fallback. Registry/method replacement
+inside an invocation and hostile in-place input mutation are not supported.
 
-Fit configuration names independent region/variable channels, signal groups,
-and normalization nuisances. Weight/shape templates automatically become
-histosys; missing sample-specific variations use nominal templates. The
-likelihood exports a HistFactory workspace, result report, profile interval,
-pulls/impacts and covariance-aware yields. Plotting uses the single
-`Histograms.BinnedHist` type through ROOTPlots adapters; postfit propagation
-retains cross-bin/sample covariance. Example uncertainty priors are explicitly
-placeholders, not analysis recommendations.
+See the retained contracts for [parallel columns](PARALLEL_COLUMN_READ_VALIDATION.md),
+[detached baskets](BASKET_DECODE_VALIDATION.md),
+[correction reuse](CORRECTION_SOURCE_REUSE_VALIDATION.md),
+[window accounting](WINDOW_ACCOUNTING.md) and
+[windowed reusable decoding](WINDOWED_REUSABLE_DECODER.md).
 
-## Single-file analysis resolution
+## Scientific boundary
 
-Config resolves `[profiles.<name>]` before constructing typed configuration.
-CLI/RunOptions `profile` overrides `[options].default_profile`; the base and one
-profile deep-merge dictionaries and replace arrays. Switches in `[options]`
-then select corrections/shapes, nominal JER, and fit; per-entry `enabled=false`
-removes correction, shape or normalization-nuisance terms. Consumers see only
-the resolved dictionary. Resolution is nonmutating and excludes the unused
-profile catalog from hashes. Existing section-based artifact dependency keys
-therefore hash the effective physics settings while preserving fine-grained
-cache invalidation. Reader options additionally enter the skim key.
-
-Default workdirs append the selected profile; explicit run workdir overrides
-are exact. Legacy files with neither section retain their original behavior.
-`cascade check` validates and summarizes without opening events; `cascade init`
-copies the commented template without overwriting existing configuration.
-`docs/CONFIG.md` is the schema/default reference. Reader normalization branches
-and JES/JER payload input aliases are configurable, retaining NanoAOD/POG defaults.
-
-Version0.6 streaming export separates original normalization populations from
-physical processing chunks: bounded typed TTree windows -> shape-safe union ->
-bounded RNTuple shard buffers -> one logical descriptor/original -> fresh staged
-validation -> atomic bundle. Serial/audit/batch use the complete group ledger,
-never repeated per-shard denominators or concatenated logical-source Events.
-See STREAMING_REDUCED_SKIM.md.
+Configured nuisance names, correlations, normalization and channel overlap checks
+are part of analysis semantics, not performance tuning. Reference technical
+priors are not final analysis recommendations. Old uncorrected ttbar regression
+targets are data/MC 5905/6434.9316 (at least one jet) and 3836/4235.2102 (at least
+two jets); they are not new measurements. The real certification mask, payloads
+and physics evidence remain necessary. Read [validation and limitations](VALIDATION.md)
+before interpreting a passing focused test as scientific approval.

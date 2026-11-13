@@ -135,7 +135,7 @@ documentation, not length/name alone, determine meaning. Optional ttbar
  theory_example uses only observed TT conventions, not all-file certification
 or a production physics recommendation.
 
-See THEORY_WEIGHTS_VALIDATION.md for evidence and scope.
+See VALIDATION.md for evidence and scope.
 
 ## Persisted extraction contracts and partial reruns
 

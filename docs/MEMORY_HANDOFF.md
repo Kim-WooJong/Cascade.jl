@@ -101,7 +101,7 @@ weight serialization reloads between these existing passes. It does not eliminat
 all intermediate allocations, all file opens, checkpoint serialization, or JIT.
 There is no measured speed, memory or runtime claim and no benchmark result.
 
-## Verification boundary and next gate
+## Verification boundary and next validation environment
 
 Only static diff/hash/grep/manual source review was authorized and performed.
 No Julia invocation, parser, build, tests, benchmark, profiler, ROOT input content,

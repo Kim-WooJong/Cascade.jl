@@ -27,7 +27,7 @@ Rules:
 - It requires `windowed_selection = true`.
 - It is rejected together with `event_range_selection = true`. That runner does not implement it, so the combination is refused rather than silently ignored.
 - It is **execution-only**. It is not in `section_hash`, the select artifact key or scientific identity.
-- Because it is not in the cache key, a warm cache will reuse ordinary artifacts. Gate runs need a fresh workdir or a forced rerun.
+- Because it is not in the cache key, a warm cache will reuse ordinary artifacts. validation environment runs need a fresh workdir or a forced rerun.
 
 When the option is `false` (the default), the code path is unchanged:
 - `select_chunk_results` computes `reusable = false`.
@@ -111,7 +111,7 @@ These serve only the two-window actual diagnostic. Production calls
 | src/Pipeline/stream_selection.jl | `extra_bytes` keyword; reusable window loop, prepare and run |
 | src/Pipeline/memory_chunk_helpers.jl | opt-in dispatch and explicit unsupported errors |
 | test/windowed_reusable_decoder/runtests.jl (new) | stdlib-only adversarial stub harness |
-| test/windowed_reusable_decoder/test_actual.jl (new) | gate-only bounded two-window actual diagnostic |
+| test/windowed_reusable_decoder/test_actual.jl (new) | validation environment-only bounded two-window actual diagnostic |
 
 `src/Pipeline/Pipeline.jl` is not changed. The new files are included from `IO.jl` and `Selection.jl`.
 
@@ -126,7 +126,7 @@ These serve only the two-window actual diagnostic. Production calls
   - `test/window_io/runtests.jl`, with `CASCADE_WINDOW_IO_BEFORE` set to a pre-A baseline tree
   - `test/execution_options/runtests.jl`
   - `test/event_ranges/runtests.jl`
-- **Bounded actual diagnostic** (gate only; Linux `/proc`; pinned TTto2L2Nu and Muon inputs; first two windows only):
+- **Bounded actual diagnostic** (validation environment only; Linux `/proc`; pinned TTto2L2Nu and Muon inputs; first two windows only):
   `CASCADE_WINDOWED_REUSABLE_REAL=1 julia --project=. test/windowed_reusable_decoder/test_actual.jl`
   - Freeze the frozen parameters before launch and never retune them after a failure.
 
@@ -140,5 +140,5 @@ These serve only the two-window actual diagnostic. Production calls
 - **Unmeasured cost.** Per-read `_reusable_branch` overhead has not been measured, and no speed claim is made.
 - **Coverage gaps.**
   - No XZ/CRC corruption coverage (deferred).
-  - No `select_chunk_results` or effective-dispatch coverage, which belongs to a separate tiny gate.
+  - No `select_chunk_results` or effective-dispatch coverage, which belongs to a separate tiny validation environment.
   - The actual diagnostic covers two windows per file and makes no full-file science claim.

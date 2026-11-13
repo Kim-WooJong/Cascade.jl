@@ -68,7 +68,7 @@ Existing tests, inspected and subsequently rerun in the candidate validation:
 The previously reported real combined run used nominal=false. Its result is
 not real-data validation of the candidate setting.
 
-Recommended bounded next test, on gate only:
+Recommended bounded next test, on validation environment only:
 
 1. Use the same deterministic small file subset for phase-2 and candidate
    configurations, distinct workdirs, and pinned correction payload SHA256.
@@ -114,16 +114,16 @@ an unrelated b-tag SF is not part of this change.
 ## Review scope
 
 The initial read-only review was extended to create
-`analysis_jer_candidate.toml` and run bounded gate validation. Baseline and
+`analysis_jer_candidate.toml` and run bounded validation environment validation. Baseline and
 phase-2 configurations remain unchanged. Confidence is high in the documented
 code ordering; physics applicability remains conditional on the provenance and
 reference checks above. No commit or push is performed by this reviewer.
 
 ## Candidate validation execution
 
-Gate scratch: `~/analisis/Cascade_dev/p3-jer-candidate`. Source/test/analysis
+validation environment scratch: `~/analisis/Cascade_dev/p3-jer-candidate`. Source/test/analysis
 transfer verified: 392 files SHA256-identical (excluding this evolving report),
-no extra files. The run uses the established gate Project/Manifest and ROOTPlots
+no extra files. The run uses the established validation environment Project/Manifest and ROOTPlots
 wrapper with four Julia threads and one BLAS thread.
 
 `t_candidate.jl` runs shape, shape-pipeline and combined-SF regressions before
@@ -167,11 +167,11 @@ Commands (absolute scratch resolved through `D`):
 
 ```sh
 D=$HOME/analisis/Cascade_dev/p3-jer-candidate
-nice -n 10 env JULIA_THREADS=4 OPENBLAS_NUM_THREADS=1 bash ~/packages/rootplots-gate.sh --project="$D" "$D/t_candidate.jl"
-nice -n 10 env JULIA_THREADS=4 OPENBLAS_NUM_THREADS=1 bash ~/packages/rootplots-gate.sh --project="$D" "$D/examples/fit_demo/pyhf_check.jl" "$D/work_candidate_subset/fit/workspace.json"
+nice -n 10 env JULIA_THREADS=4 OPENBLAS_NUM_THREADS=1 bash ~/packages/configured-julia-root-runner.sh --project="$D" "$D/t_candidate.jl"
+nice -n 10 env JULIA_THREADS=4 OPENBLAS_NUM_THREADS=1 bash ~/packages/configured-julia-root-runner.sh --project="$D" "$D/examples/fit_demo/pyhf_check.jl" "$D/work_candidate_subset/fit/workspace.json"
 ```
 
-Final candidate TOML SHA256, verified identical on Mac/gate:
+Final candidate TOML SHA256, verified identical on Mac/validation environment:
 `aefb4bde3f65f246cdc75f2899fa4df49d9a88f2a4a068f4f082f0d573a927b7`.
 A stale inherited header comment was corrected after launch, without changing
 TOML semantics; that comment-only version was resynchronized and hashed.
