@@ -1,8 +1,8 @@
 # Image-generation-only precompile declarations for the CLI entry and the checkpoints=false body.
 # Executed ONLY while a package image is being generated (jl_generating_output == 1): no data, files, tasks or
 # configuration are touched, and ordinary runtime loading/behavior is unchanged. Each declaration must succeed.
-# Exception (last block): the stable-selection training workload reads its two tracked files
-# (spec + bundled analysis TOML, both include_dependency'd); still no data, inputs or tasks.
+# Exception (training block): the stable-selection workload reads its tracked spec
+# and bundled analysis include closure (all include_dependency'd); no data, inputs or tasks.
 if ccall(:jl_generating_output, Cint, ()) == 1
     let ok = (precompile(main, (Vector{String},)),
               precompile(run_no_checkpoints, (Config.AnalysisConfig, String, Vector{Config.SampleConfig}, RunOptions)),
@@ -26,11 +26,13 @@ if ccall(:jl_generating_output, Cint, ()) == 1
         all(ok) || error("Pipeline named-stage precompile declaration failed: $(ok)")
     end
     # Opt-in stable selection kernels: bounded training workload over the bundled analysis
-    # TOML and column schema (both tracked as image dependencies). Zero-event typed columns
+    # TOML include closure and column schema (all tracked image dependencies). Zero-event typed columns
     # only; no input files, golden JSON, ROOT data, tasks or environment.
     let spec = STABLE_SELECTION_WORKLOAD
         include_dependency(spec)
-        include_dependency(stable_selection_workload_analysis(spec))
+        for dep in Config.config_provenance(stable_selection_workload_analysis(spec))["dependencies"]
+            include_dependency(dep["path"])
+        end
         stable_selection_workload(spec)
     end
     # Post-select families of the first work unit (R16 trace) behind dynamic boundaries

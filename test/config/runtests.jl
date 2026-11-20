@@ -14,3 +14,5 @@ module TestExecutionOptimizations
 using Test, Cascade.Config
 include("test_execution_optimizations.jl")
 end
+
+include("test_modular_config.jl")

@@ -102,6 +102,7 @@ function select_chunk_results(p, compiled, plans, lm, s, path, out; budget, stre
     shared_offsets = reusable && Config.reusable_shared_offsets(cfg)
     reuse_buffers = Config.reuse_window_buffers(cfg)
     reuse_accounting = Config.reuse_window_accounting(cfg)
+    reuse_raw = Config.reuse_raw_destinations(cfg)
     reusable && !isempty(window_reason) && throw(EventIO.WindowedReusableUnsupported(path, window_reason))
     # ROOT fixed header bounds are checked before open_source metadata decode.
     windowed && isempty(window_reason) && validate_stream_metadata(path, Dict("max_metadata_bytes"=>streaming.stream_metadata_bytes))
@@ -124,7 +125,7 @@ function select_chunk_results(p, compiled, plans, lm, s, path, out; budget, stre
             window_result, window_reason = reusable ?
                 run_reusable_windowed_selection(sel, src, s, streaming; lumimask=lmask,
                     object_collections=[o.name => o.collection for o in cfg.objects], execution_diagnostics=execution,
-                    shared_offsets, reuse_buffers, reuse_accounting) :
+                    shared_offsets, reuse_buffers, reuse_accounting, reuse_raw) :
                 run_windowed_selection(sel, src, s, streaming; lumimask=lmask,
                     object_collections=[o.name => o.collection for o in cfg.objects], execution_diagnostics=execution)
             execution["windowed_selection_reason"] = window_reason

@@ -52,7 +52,8 @@ for its current window record, instead of each receiving a private copy. The
 borrowed `Jagged.offsets` is a mutable Vector{Int} shared with the record and every
 sibling: no caller may mutate or resize it for its whole reachable lifetime (also
 after return, window advance, release or source close); mutation requires an
-explicit private copy. Content stays freshly allocated; sharing across windows,
+explicit private copy. Content stays freshly allocated unless execution.reuse_raw_destinations is enabled;
+then raw content is borrowed only until the next read of that branch. Offsets sharing across windows,
 readers/sources or decoder states is never admitted (unproven requests copy).
 Values, types, order and decoder validation are unchanged. Window memory checks
 re-charge each borrow as the copy it replaces: equal for exact-capacity records,
@@ -110,3 +111,16 @@ function reuse_window_accounting(raw::AbstractDict; validate_relations::Bool=tru
     return enabled
 end
 reuse_window_accounting(cfg::AnalysisConfig) = reuse_window_accounting(cfg.raw)
+"""Default-OFF task-owned raw content reuse. Selection outputs never alias raw.
+Only the serial modern route currently owns the reuse lifetime proof."""
+function reuse_raw_destinations(raw::AbstractDict;validate_relations::Bool=true)
+    e=get(raw,"execution",Dict())
+    enabled=get(e,"reuse_raw_destinations",false)
+    enabled isa Bool || throw(ArgumentError("execution.reuse_raw_destinations must be boolean"))
+    if enabled && validate_relations
+        windowed_reusable_decoder(raw) || throw(ArgumentError("reuse_raw_destinations requires windowed_reusable_decoder"))
+        event_range_selection(raw) && throw(ArgumentError("reuse_raw_destinations is serial-only pending range batching"))
+    end
+    return enabled
+end
+reuse_raw_destinations(cfg::AnalysisConfig)=reuse_raw_destinations(cfg.raw)

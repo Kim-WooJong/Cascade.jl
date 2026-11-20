@@ -1,0 +1,90 @@
+# ---------------------------------------------------------------- corrections
+[hooks]
+correct = "Cascade.Systematics.apply_corrections"
+
+[corrections.sets]
+muon = "${jsonpog}/MUO/2022_Summer22/muon_Z.json.gz"
+electron = "${jsonpog}/EGM/2022_Summer22/electron.json.gz"
+pileup = "${jsonpog}/LUM/2022_Summer22/puWeights.json.gz"
+
+[[corrections.object_sf]]
+name = "muon_id"
+set = "muon"
+correction = "NUM_TightID_DEN_TrackerMuons"
+object = "muons"
+indices = [1]
+inputs = { eta = "eta", pt = "pt" }
+systematic = "scale_factors"
+nominal = "nominal"
+up = "systup"
+down = "systdown"
+
+[[corrections.object_sf]]
+name = "muon_iso"
+set = "muon"
+correction = "NUM_TightPFIso_DEN_TightID"
+object = "muons"
+indices = [1]
+inputs = { eta = "eta", pt = "pt" }
+systematic = "scale_factors"
+nominal = "nominal"
+up = "systup"
+down = "systdown"
+
+# Reco SF: two pt ranges of one correction, varied together as "electron_reco".
+[[corrections.object_sf]]
+name = "electron_reco"
+set = "electron"
+correction = "Electron-ID-SF"
+object = "electrons"
+indices = [1]
+when = "pt < 75.0"
+inputs = { year = "2022Re-recoBCD", WorkingPoint = "Reco20to75", eta = "eta + deltaEtaSC", pt = "pt" }
+systematic = "ValType"
+nominal = "sf"
+up = "sfup"
+down = "sfdown"
+
+[[corrections.object_sf]]
+name = "electron_reco"
+set = "electron"
+correction = "Electron-ID-SF"
+object = "electrons"
+indices = [1]
+when = "pt >= 75.0"
+inputs = { year = "2022Re-recoBCD", WorkingPoint = "RecoAbove75", eta = "eta + deltaEtaSC", pt = "pt" }
+systematic = "ValType"
+nominal = "sf"
+up = "sfup"
+down = "sfdown"
+
+[[corrections.object_sf]]
+name = "electron_id"
+set = "electron"
+correction = "Electron-ID-SF"
+object = "electrons"
+indices = [1]
+inputs = { year = "2022Re-recoBCD", WorkingPoint = "Tight", eta = "eta + deltaEtaSC", pt = "pt" }
+systematic = "ValType"
+nominal = "sf"
+up = "sfup"
+down = "sfdown"
+
+[[corrections.event_weight]]
+name = "pileup"
+set = "pileup"
+correction = "Collisions2022_355100_357900_eraBCD_GoldenJson"
+inputs = { NumTrueInteractions = "Pileup_nTrueInt" }
+systematic = "weights"
+nominal = "nominal"
+up = "up"
+down = "down"
+
+# Placeholder (see header): no e-mu trigger SF in jsonpog 2022_Summer22. No number
+# is assumed here; set nominal/up/down from a trigger-efficiency measurement.
+[[corrections.flat]]
+name = "trigger_emu"
+nominal = 1.0
+up = 1.0
+down = 1.0
+

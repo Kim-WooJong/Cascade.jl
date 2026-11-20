@@ -11,13 +11,16 @@ function batch_plan(opts::RunOptions)
     opts.max_files >= 0 || throw(ArgumentError("max_files must be nonnegative"))
     work = abspath(opts.workdir)
     batch_safe_path(work)
-    cfg = load_analysis(opts.config; profile = opts.profile)
+    source = load_analysis_source(opts.config; profile = opts.profile)
+    cfg = source.config
+    config_source = source.provenance
     checkpoints_enabled(cfg) || throw(ArgumentError("batch execution requires execution.checkpoints=true: tasks, receipts and resume are checkpoint artifacts"))
     batch_validate_names(cfg)
     return batch_lock(work * ".plan.lock") do
         ispath(work) && throw(ArgumentError("batch workdir already exists: $work"))
+        verify_config_sources(config_source)
         fingerprint = batch_fingerprint(cfg)
-        config_hash = bytes2hex(open(sha256, opts.config))
+        config_hash = config_source["sha256"]
         samples = isempty(opts.samples) ? cfg.samples : [sample_by_name(cfg, n) for n in opts.samples]
         length(unique(s.name for s in samples)) == length(samples) || error("duplicate batch samples")
         validate_reduced_inputs(cfg, samples; max_files = opts.max_files, verify_payloads = false)
@@ -77,6 +80,8 @@ function batch_plan(opts::RunOptions)
             m = Dict{String,Any}("schema" => 1, "host" => batch_host(),
                 "config" => abspath(opts.config), "profile" => opts.profile,
                 "config_sha256" => config_hash,
+                "config_sha256_scope" => config_source["scope"],
+                "config_dependencies" => config_source["dependencies"],
                 "resolved" => cfg.raw, "config_dir" => cfg.dir,
                 "samples" => [s.name for s in samples], "max_files" => opts.max_files,
                 "workers" => workers, "threads" => threads, "fingerprint" => fingerprint,
@@ -84,7 +89,7 @@ function batch_plan(opts::RunOptions)
                 "coverage" => "discovered inventory only; dataset completeness not certified")
             m["id"] = batch_hash(m)
             batch_hash(batch_fingerprint(cfg)) == batch_hash(fingerprint) || error("source/payload changed during planning")
-            bytes2hex(open(sha256, opts.config)) == m["config_sha256"] || error("config changed during planning")
+            verify_config_provenance(opts.config, config_source)
             batch_atomic_json(joinpath(stage, "manifest.json"), m)
             Base.Filesystem.rename(stage, work)
             return m

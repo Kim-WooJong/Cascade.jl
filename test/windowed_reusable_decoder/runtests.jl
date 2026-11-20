@@ -823,3 +823,6 @@ end
 if get(ENV, "CASCADE_WINDOWED_REUSABLE_REAL", "0") == "1"
     error("The historical site-pinned real-input harness is not distributed. Configure an independently validated real-input test for your site; no substitute result is implied.")
 end
+
+# Focused raw-destination lifetime, ownership and budget regression tests.
+include("raw_destinations.jl")

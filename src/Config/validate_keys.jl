@@ -11,7 +11,7 @@ function validate_keys(d::AbstractDict; prefix = "")
         "reduced_skim" => split("format retention include drop mode streaming max_events max_payload_bytes max_input_bytes max_buffer_bytes"),
         "reduced_skim.streaming" => split("window_events target_shard_events target_shard_payload_bytes max_basket_bytes max_window_bytes max_buffer_bytes max_metadata_bytes"),
         "batch" => split("workers threads"),
-        "execution" => split("checkpoints lightweight_skim_metadata event_range_selection memoize_variables memoize_max_bytes stable_selection_kernels windowed_selection windowed_reusable_decoder reusable_shared_offsets reuse_window_buffers reuse_window_accounting memory_handoff column_readers decode_threads decode_queue_jobs decode_queue_bytes streaming_selection stream_window_events stream_active_files stream_queue_windows stream_queue_bytes stream_window_bytes stream_basket_bytes stream_metadata_bytes stream_retained_bytes"),
+        "execution" => split("checkpoints lightweight_skim_metadata event_range_selection memoize_variables memoize_max_bytes stable_selection_kernels windowed_selection windowed_reusable_decoder reusable_shared_offsets reuse_raw_destinations reuse_window_buffers reuse_window_accounting memory_handoff column_readers decode_threads decode_queue_jobs decode_queue_bytes streaming_selection stream_window_events stream_active_files stream_queue_windows stream_queue_bytes stream_window_bytes stream_basket_bytes stream_metadata_bytes stream_retained_bytes"),
         "analysis" => split("name lumi_pb workdir"),
         "samples" => split("name kind files format xsec_pb branching_ratio stream group source metadata audit"),
         "samples.source" => split("tree runs_tree gen_sumw gen_weight"),
@@ -55,6 +55,7 @@ function validate_keys(d::AbstractDict; prefix = "")
         path == "" && checkpoints_enabled(t)
         path == "" && lightweight_skim_metadata(t)
         path == "" && memory_handoff(t)
+        path == "" && reuse_raw_destinations(t;validate_relations=!overlay)
         path == "" && windowed_selection(t)
         path == "" && windowed_reusable_decoder(t; validate_relations=!overlay)
         path == "" && reusable_shared_offsets(t; validate_relations=!overlay)
@@ -83,6 +84,7 @@ function validate_keys(d::AbstractDict; prefix = "")
         execution = merge(Dict{String,Any}(base_execution),get(profile,"execution",Dict()))
         streaming_selection_options(Dict("execution"=>execution))
         event_range_selection(Dict("execution"=>execution))
+        reuse_raw_destinations(Dict("execution"=>execution))
         memoization_options(Dict("execution"=>execution))
         stable_selection_kernels(Dict("execution"=>execution))
         checkpoints_enabled(Dict("execution"=>execution))

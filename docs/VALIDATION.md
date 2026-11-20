@@ -1,12 +1,48 @@
 # Validation and limitations
 
 Cascade 0.1.0 is an experimental research snapshot, not a stable release or a
-validated final physics analysis. Earlier focused development runs passed fifteen
-standalone test areas. **That is not a passing run of this public tree.** Bounded
-canonical-suite attempts stopped during batch tests. The complete suite,
-Pkg.test(), a fresh installation and the supported-version matrix remain
-unverified. Documentation cleanup does not rerun those checks.
-No passing CI badge, universal speedup or final cross-section result is asserted.
+validated final physics analysis. **The complete package test suite has not
+passed in the source-only environment.** On Julia 1.12.6, the current `Pkg.test()`
+attempt passed audit (55 assertions), basket decode (354) and batch (509).
+It then stopped in configuration tests: 469 assertions passed and five testsets
+errored because the external CMS certification mask and configured CVMFS
+JES/JER payloads were absent. Later areas were not run by that attempt.
+The initial isolated-launcher environment failure was fixed and its guards were
+retained; missing scientific inputs were not fabricated or bypassed.
+A fully provisioned full-suite run, clean-checkout installation and the
+supported-version matrix remain unverified. No passing CI badge, universal
+speedup or final cross-section result is asserted.
+
+### Public-tree focused checks (2026-11-20)
+
+On Julia 1.12.6, an isolated dependency environment resolved ROOTPlots 0.2.2
+from its declared Git tag and UnROOT 0.11.11. The actual package loaded, and
+**324 modular-configuration assertions passed with real JSON3**, covering all
+reference profiles, typed/native-bit equivalence, include failures, validation
+and TOML dependency identity. The CLI `--help`, `init`, generated-template
+`check`, and README MC-example `check` also completed successfully in that
+environment without opening external event files. Reference-profile comparisons
+deliberately use
+`validate=false` where external calibration assets are unavailable; this does
+not certify those assets or execute a reference analysis.
+
+The same public source also passed **482** synthetic reusable-decoder assertions,
+**345** configuration/batch/precompile recording-harness assertions and **34**
+modern-counting configuration assertions. The recording harness substitutes JSON
+transport, inventory/data IO and precompile training boundaries; those counts
+are not additional full-pipeline or real-input physics checks. All **468**
+production Julia source files parsed successfully. These scoped results do not
+establish full-suite, native-rendering or supported-version-matrix success.
+
+An additional real-module **16-assertion synthetic column-file smoke test**
+passed: single-file and modular configurations produced equal merged histogram
+stores through the no-checkpoint chain, published the captured TOML dependency
+identity, and a real batch plan rejected a fragment modified after planning.
+This used four generated MC events, not external NanoAOD data or calibration
+payloads, and did not test reduced export or native rendering. The isolated
+source-copy worker-launcher check passed **7 assertions** with the active resolved
+environment and another **7** with a versioned manifest/relative dependency path
+regression; it verifies that the copied Cascade source is actually executed.
 
 ## Environment and external inputs
 

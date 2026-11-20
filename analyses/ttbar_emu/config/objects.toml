@@ -1,0 +1,32 @@
+# ---------------------------------------------------------------- objects
+# Signal (pT > 35) and veto (pT > 10) leptons use the same ID ([AN] 3.1).
+# Electron: |eta| < 2.4, ECAL gap 1.444 < |eta_SC| < 1.566 excluded, cut-based tight.
+# Muon: |eta| < 2.4, tight ID, PF relative isolation (dR < 0.4) < 0.15.
+[[objects]]
+name = "electrons"
+collection = "Electron"
+cut = "pt > 35.0 && abs(eta) < 2.4 && !(1.444 < abs(eta + deltaEtaSC) < 1.566) && cutBased >= 4"
+
+[[objects]]
+name = "muons"
+collection = "Muon"
+cut = "pt > 35.0 && abs(eta) < 2.4 && tightId && pfRelIso04_all < 0.15"
+
+[[objects]]
+name = "veto_electrons"
+collection = "Electron"
+cut = "pt > 10.0 && abs(eta) < 2.4 && !(1.444 < abs(eta + deltaEtaSC) < 1.566) && cutBased >= 4"
+
+[[objects]]
+name = "veto_muons"
+collection = "Muon"
+cut = "pt > 10.0 && abs(eta) < 2.4 && tightId && pfRelIso04_all < 0.15"
+
+# AK4 PUPPI jets: pT > 30, |eta| < 2.4, tight jet ID (jetId bit 2), dR(jet, signal lepton) > 0.4.
+[[objects]]
+name = "jets"
+collection = "Jet"
+cut = "pt > 30.0 && abs(eta) < 2.4 && (jetId & 2) != 0"
+clean = { against = ["electrons", "muons"], dr = 0.4 }
+sort_by = "pt"
+

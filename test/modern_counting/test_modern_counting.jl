@@ -4,7 +4,7 @@ using Test, TOML, SHA
 module Boundary
 using TOML, SHA
 const ROOT = normpath(joinpath(@__DIR__, "../.."))
-for file in ("SampleConfig", "ObjectConfig", "CutConfig", "RegionConfig", "HistogramConfig", "VariationConfig", "TriggerConfig", "DataQualityConfig", "ShapeVariationConfig", "AnalysisConfig", "parse_binning", "substitute_paths", "resolve_config", "column_readers", "decode_options", "windowed_selection", "streaming_selection_options", "memory_handoff", "memoization_options", "checkpoint_options", "event_ranges", "validate_keys", "parse_analysis", "counting_readiness")
+for file in ("SampleConfig", "ObjectConfig", "CutConfig", "RegionConfig", "HistogramConfig", "VariationConfig", "TriggerConfig", "DataQualityConfig", "ShapeVariationConfig", "AnalysisConfig", "parse_binning", "substitute_paths", "resolve_config", "column_readers", "decode_options", "windowed_selection", "streaming_selection_options", "memory_handoff", "memoization_options", "checkpoint_options", "event_ranges", "validate_keys", "parse_analysis", "config_source", "counting_readiness")
     include(joinpath(ROOT,"src/Config",file*".jl"))
 end
 # JSON3 string/scalar writing is stubbed ONLY in this portable boundary test.
@@ -33,7 +33,7 @@ const ROOT = normpath(joinpath(@__DIR__, "../.."))
     @test "TTtoLNu2Q" in cfg.raw["counting"]["background_samples"]
     @test Boundary.checkpoints_enabled(cfg) === false
     for p in ("baseline","sf","phase2","jer_candidate")
-        old=Boundary.parse_analysis(TOML.parsefile(joinpath(ROOT,"analyses/ttbar_emu/analysis.toml"));profile=p)
+        old=Boundary.parse_analysis(Boundary.read_analysis_source(joinpath(ROOT,"analyses/ttbar_emu/analysis.toml")).raw;profile=p)
         @test Boundary.counting_readiness(old)["status"]=="not_requested"
     end
     bad=deepcopy(raw);bad["counting"]["typo"]=true

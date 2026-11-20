@@ -7,8 +7,10 @@ function reduce_analysis(opts::RunOptions; output_dir::AbstractString, _observe_
     opts.force && error("reduce never overwrites outputs")
     opts.max_files >= 0 || error("max_files must be nonnegative")
     isempty(output_dir) && error("reduce requires an unused output directory")
-    config_hash = bytes2hex(sha256(read(opts.config)))
-    cfg = load_analysis(opts.config; profile = opts.profile)
+    source = load_analysis_source(opts.config; profile = opts.profile)
+    cfg = source.config
+    config_source = source.provenance
+    config_hash = config_source["sha256"]
     options = reduced_skim_options(cfg)
     samples = isempty(opts.samples) ? cfg.samples : [sample_by_name(cfg, n) for n in opts.samples]
     length(unique(s.name for s in samples)) == length(samples) || error("duplicate reduced samples")
@@ -50,12 +52,14 @@ function reduce_analysis(opts::RunOptions; output_dir::AbstractString, _observe_
                 batch_hash(current) == batch_hash(inventories[s.name]) || error("original inventory changed during export")
             end
             batch_hash(batch_fingerprint(cfg)) == batch_hash(fingerprint) || error("export code/payload contract changed")
-            bytes2hex(sha256(read(opts.config))) == config_hash || error("source config changed during export")
+            verify_config_provenance(opts.config, config_source)
             raw = reduced_analysis_config(cfg, samples, records, final)
             open(io -> TOML.print(io, raw), joinpath(stage, "analysis.toml"), "w")
             manifest = Dict{String,Any}("schema" => options["mode"] == "streaming" ? 2 : 1,
                 (options["mode"] == "streaming" ? "groups" : "files") => records, "inventory" => inventories,
                 "source_config" => cfg.path, "source_config_sha256" => config_hash,
+                "source_config_sha256_scope" => config_source["scope"],
+                "source_config_dependencies" => config_source["dependencies"],
                 "profile" => opts.profile, "resolved_config" => cfg.raw, "fingerprint" => fingerprint,
                 "analysis_sha256" => bytes2hex(open(sha256, joinpath(stage, "analysis.toml"))),
                 "options" => options, "scope" => "consistent derivation, not dataset completeness or producer attestation")
@@ -71,7 +75,7 @@ function reduce_analysis(opts::RunOptions; output_dir::AbstractString, _observe_
                 current = [Dict("path" => path, "identity" => batch_input_identity(path)) for path in expand_files(sample.files)]
                 batch_hash(current) == batch_hash(inventories[sample.name]) || error("original inventory changed before final publication")
             end
-            bytes2hex(sha256(read(opts.config))) == config_hash || error("source config changed before final publication")
+            verify_config_provenance(opts.config, config_source)
             batch_hash(batch_fingerprint(cfg)) == batch_hash(fingerprint) || error("export code/payload changed before final publication")
             batch_safe_path(final)
             ispath(final) && error("reduced destination appeared during export")

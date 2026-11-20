@@ -1,0 +1,18 @@
+# Nominal JER smearing is chosen by options.jer_nominal (profile jer_candidate).
+[[shape_variations]]
+name = "JES_Total"
+collection = "Jet"
+kind = "jes"
+corrections = "${jsonpog}/JME/2022_Summer22/jet_jerc.json.gz"
+source = "Summer22_22Sep2023_V2_MC_Total_AK4PFPuppi"
+
+[[shape_variations]]
+name = "JER"
+collection = "Jet"
+kind = "jer"
+corrections = "${jsonpog}/JME/2022_Summer22/jet_jerc.json.gz"
+resolution = "Summer22_22Sep2023_JRV1_MC_PtResolution_AK4PFPuppi"
+scale_factor = "Summer22_22Sep2023_JRV1_MC_ScaleFactor_AK4PFPuppi"
+smear_file = "${jsonpog}/JME/jer_smear.json.gz"
+nominal = false
+

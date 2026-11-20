@@ -11,7 +11,11 @@
 # the StreamWindowReader. Its scratch is reused across baskets/branches/windows
 # (bounded by _nanoaod_scratch_limit()); native codec state lives only inside one
 # branch read and is finalized in 'finally' before the caller closes the source.
-# Window destination CONTENT is always freshly allocated and never aliases scratch
+# Default window CONTENT is fresh and never aliases scratch. Opt-in reuse_destinations
+# instead lends task-owned content only until the next read of that branch; callers
+# must complete selection and drop raw references before advancing. Selected outputs
+# must own copies. Default fresh ownership and offset lifetime are unchanged.
+# Destination content never aliases codec scratch
 # or siblings. Jagged destination OFFSETS are a private copy by default. Only with
 # execution.reusable_shared_offsets (config default: follows windowed_reusable_decoder;
 # this low-level state's share_window_offsets keyword defaults to false) may sibling jagged
@@ -71,15 +75,21 @@ mutable struct StreamDecodeState{D,B,C}
     record_window::Int                  # window whose complete counter record THIS state issued (0 = none)
     record_range::UnitRange{Int}        # that window's event range
     record_refs::Vector{WeakRef}        # issued offsets vector per d.counters entry
+    reuse_destinations::Bool
+    destinations::Dict{String,Any}
+    destination_reserved::Int
+    destination_limit::Int
     proof_reserved::Int                 # opt-in proof metadata bytes measured at construction (0 by default);
                                         # reserved before any Events read via reusable_reservation_bytes(r, d)
 end
+
+include("reusable_destinations.jl")
 
 const REUSABLE_SHARED_OFFSET_STAT_KEYS = ("shared_offset_aliases", "avoided_offset_copy_bytes")
 
 function StreamDecodeState(r::StreamWindowReader; scratch = _NanoAODScratch(),
         decoder = _read_reusable_basket!, branch = _reusable_branch, close = _close_reusable_branch,
-        share_window_offsets::Bool = false)
+        reuse_destinations::Bool = false, share_window_offsets::Bool = false)
     counters = sort!(unique!(String[String(c) for c in values(r.counters)]))
     first_event = isempty(r.windows) ? 1 : first(first(r.windows))
     zero_by_counter() = Dict{String,Int}(c => 0 for c in counters)
@@ -94,7 +104,7 @@ function StreamDecodeState(r::StreamWindowReader; scratch = _NanoAODScratch(),
         Dict{String,Vector{Int}}(), Dict{String,Vector{Int}}(), Set{String}(), 0, 0,
         stats, share, share ? Dict{String,String}(r.counters) : Dict{String,String}(),
         share ? _plan_branch_ids(r) : Dict{String,Tuple{Vector{StreamBasketDesc},Vector{Int}}}(),
-        share ? r.seen : nothing, 0, 1:0, share ? WeakRef[WeakRef() for _ in counters] : WeakRef[], 0)
+        share ? r.seen : nothing, 0, 1:0, share ? WeakRef[WeakRef() for _ in counters] : WeakRef[], reuse_destinations, Dict{String,Any}(), 0, Int(r.options.stream_window_bytes), 0)
     # All proof containers are fully preallocated here and never grow afterwards (issuance
     # replaces a fixed number of WeakRef slots; release only empties), so this measurement
     # bounds the proof metadata for the whole file. finish_reusable_stream! re-checks it.
@@ -346,7 +356,8 @@ planned counter in its CURRENT window record: then the output BORROWS that vecto
 (same values; the replaced copy is charged by reusable_shared_offsets_charge).
 Borrowed offsets are shared with the record and all siblings and must never be
 mutated or resized by any caller for their whole reachable lifetime; mutate only a
-private copy. Content is always freshly allocated.
+private copy. Content is fresh by default; opt-in reuse_destinations borrows task-owned content
+until that branch is read again. Callers must finish selection before reuse.
 """
 function read_reusable_branch_owned(br, name, range, options, diagnostics, seen, d::StreamDecodeState;
         needed = nothing, offsets = nothing, phase = "pre", basket_observer = (_) -> nothing, window_counters = nothing)
@@ -373,10 +384,10 @@ function read_reusable_branch_owned(br, name, range, options, diagnostics, seen,
     state === nothing && throw(WindowedReusableUnsupported(String(name), "reusable_branch_not_admitted"))
     d.live_states += 1
     try
-        data = br.jagged ? zeros(E, last(offsets)) : Vector{E}(undef, n)
+        data, allocated = reusable_destination!(d, String(name), E, br.jagged ? last(offsets) : n, br.jagged)
         outoffsets = br.jagged ? (share ? offsets : copy(offsets)) : Int[]
         copied = share ? 0 : sizeof(outoffsets)
-        d.stats["destination_allocated_bytes"] += sizeof(data) + copied
+        d.stats["destination_allocated_bytes"] += allocated + copied
         d.stats["offset_copy_bytes"] += copied
         if share
             d.stats["shared_offset_aliases"] += 1
@@ -527,7 +538,7 @@ end
 """Owned raw/progress bytes plus scratch capacity plus the conservative native
 decoder bound must fit the window budget; records the measured high-water."""
 function check_reusable_window_memory!(d::StreamDecodeState, options, owned)
-    live = Int128(owned) + length(d.scratch.raw) + _nanoaod_decoder_limit()
+    live = Int128(owned) + d.destination_reserved + length(d.scratch.raw) + _nanoaod_decoder_limit()
     live <= options.stream_window_bytes || error("windowed reusable decoder live bytes $live (owned raw/progress + scratch capacity + native decoder bound) exceed execution.stream_window_bytes=$(options.stream_window_bytes)")
     d.stats["live_highwater_bytes"] = max(d.stats["live_highwater_bytes"], Int(live))
     d.stats["owned_window_highwater_bytes"] = max(d.stats["owned_window_highwater_bytes"], Int(owned))
@@ -644,6 +655,8 @@ end
 finalized per branch. Outputs already returned keep their own (borrowed) offsets."""
 function release_reusable_stream!(d::StreamDecodeState)
     d.scratch.raw = UInt8[]
+    empty!(d.destinations)
+    d.destination_reserved = 0
     d.record_window = 0
     for i in eachindex(d.record_refs)
         d.record_refs[i] = WeakRef()

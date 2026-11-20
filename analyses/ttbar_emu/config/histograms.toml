@@ -1,0 +1,54 @@
+# ---------------------------------------------------------------- histograms
+# Binning as in the reference fill_control.jl. Underflow dropped, overflow in the last bin.
+[[histograms]]
+name = "lep_pt"
+range = [35.0, 10.0, 205.0]
+values = ["electrons.pt[1]", "muons.pt[1]"]
+xlabel = "Lepton p_{T} (GeV)"
+
+[[histograms]]
+name = "lep_eta"
+linspace = [-2.4, 2.4, 20]
+values = ["electrons.eta[1]", "muons.eta[1]"]
+xlabel = "Lepton #eta"
+
+[[histograms]]
+name = "jet1_pt"
+range = [30.0, 20.0, 410.0]
+values = ["jets.pt[1]"]
+when = "njet >= 1"
+xlabel = "Leading jet p_{T} (GeV)"
+
+[[histograms]]
+name = "jet2_pt"
+range = [30.0, 20.0, 410.0]
+values = ["jets.pt[2]"]
+when = "njet >= 2"
+xlabel = "Subleading jet p_{T} (GeV)"
+
+[[histograms]]
+name = "jet3_pt"
+range = [30.0, 20.0, 410.0]
+values = ["jets.pt[3]"]
+when = "njet >= 3"
+xlabel = "Third jet p_{T} (GeV)"
+
+[[histograms]]
+name = "jet1_eta"
+linspace = [-2.5, 2.5, 20]
+values = ["jets.eta[1]"]
+when = "njet >= 1"
+xlabel = "Leading jet #eta"
+
+[[histograms]]
+name = "mll"
+range = [20.0, 20.0, 420.0]
+values = ["mll"]
+xlabel = "m_{e#mu} (GeV)"
+
+[[histograms]]
+name = "njet"
+range = [0.5, 1.0, 7.5]
+values = ["njet"]
+xlabel = "Number of jets"
+

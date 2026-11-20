@@ -14,7 +14,10 @@ counter policy and accounting differ:
 - owned raw/progress/counter bytes plus scratch and the native decoder bound are
   checked against stream_window_bytes.
 
-Result arrays are window-owned; no scratch-backed view escapes. With opt-in
+Result content is fresh by default; no scratch-backed view escapes. With opt-in
+execution.reuse_raw_destinations, content is borrowed only until the next read of
+that branch; finish selection and drop raw references before advancing. Selected
+outputs own copies. With opt-in
 execution.reusable_shared_offsets, jagged columns of the payload BORROW this
 window's counter-record offsets (payload.counters.offsets): they are shared with
 siblings and must never be mutated or resized; mutate only a private copy.

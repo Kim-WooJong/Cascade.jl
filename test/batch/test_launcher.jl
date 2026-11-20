@@ -2,10 +2,34 @@
     mktempdir() do dir
         root = dirname(dirname(@__DIR__))
         copyroot = joinpath(dir, "source-copy"); mkpath(copyroot)
-        for name in ("src", "bin", "Project.toml", "Manifest.toml")
+        for name in ("src", "bin", "Project.toml")
             source = joinpath(root, name)
             ispath(source) && cp(source, joinpath(copyroot, name))
         end
+        # A fresh copy may precompile: retain the bundled training TOML closure,
+        # but never copy its external calibration payloads or analysis data.
+        analysis = BP.stable_selection_workload_analysis(BP.STABLE_SELECTION_WORKLOAD)
+        for dep in config_provenance(analysis)["dependencies"]
+            destination = joinpath(copyroot, relpath(dep["path"], root))
+            mkpath(dirname(destination))
+            cp(dep["path"], destination)
+        end
+        # Pkg.test resolves dependencies in its active temporary environment, not
+        # necessarily in the package source root. Preserve that exact resolution
+        # while keeping Cascade itself bound to this copied package project.
+        project = Base.active_project()
+        project === nothing && error("launcher test requires an active project")
+        manifest = Base.project_file_manifest_path(project)
+        manifest === nothing && error("launcher test requires a resolved active manifest")
+        resolved = TOML.parsefile(manifest)
+        for entries in values(get(resolved, "deps", resolved))
+            entries isa AbstractVector || continue
+            for entry in entries
+                haskey(entry, "path") || continue
+                entry["path"] = normpath(joinpath(dirname(manifest), entry["path"]))
+            end
+        end
+        open(io -> TOML.print(io, resolved), joinpath(copyroot, "Manifest.toml"), "w")
         marker = joinpath(dir, "changed-entrypoint-executed")
         mutation = "write(" * repr(marker) * ", " * repr("changed") * ")" * string(Char(10))
         report = joinpath(dir, "report.json")
@@ -29,6 +53,7 @@
         end
         write($(repr(report)), JSON3.write(Dict("rejected" => rejected,
             "changed" => [k for k in keys(before) if before[k] != after[k]],
+            "source" => realpath(pathof(Cascade)),
             "marker" => ispath($(repr(marker))), "attempts" => ispath(joinpath(work, "attempts")),
             "launches" => ispath(joinpath(work, "launches")))))
         """)
@@ -42,6 +67,7 @@
         if isfile(report)
             r = JSON3.read(read(report, String))
             @test r["changed"] == ["bin/cascade.jl"]
+            @test r["source"] == realpath(joinpath(copyroot, "src", "Cascade.jl"))
             @test r["rejected"] == [true, true, true, true]
             @test !r["marker"]
             @test !r["attempts"]

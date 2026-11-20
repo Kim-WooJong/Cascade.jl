@@ -1,9 +1,9 @@
 # Analysis configuration reference
 
-One TOML file defines an analysis. Start with `cascade init my_analysis`, edit
+One entry TOML defines an analysis, optionally including domain files. Start with `cascade init my_analysis`, edit
 `my_analysis/analysis.toml`, then `cascade check my_analysis/analysis.toml`.
 Run it with `cascade run my_analysis/analysis.toml`. Relative input/payload paths
-are resolved against the TOML directory; relative workdirs against the process
+are resolved against the **entry** TOML directory; relative workdirs against the process
 working directory. `${name}` expands `[paths]` recursively (maximum 16 passes);
 a leading `~` expands to the current user's home. Unknown keys produce errors
 with their section path, including inactive profile overlays. Free-label
@@ -20,6 +20,84 @@ values are errors. They may be nested in `[paths]` (for example
 `data_quality.golden_json="${certification}"`). No shell command is evaluated.
 The Golden JSON remains an external input, resolved relative to the TOML if not
 absolute, and its contents are hashed for selection caching.
+
+## Domain files (optional)
+
+Existing single-file configurations and CLI commands are unchanged. The reference
+`analyses/ttbar_emu/analysis.toml` is now a short entry with an explicit list:
+
+```toml
+include = ["config/analysis.toml", "config/samples.toml", "config/data_quality.toml",
+           "config/objects.toml", "config/selection.toml", "config/histograms.toml",
+           "config/corrections.toml", "config/systematics.toml",
+           "config/fitplot.toml", "config/profiles.toml"]
+```
+
+```text
+ttbar_emu/
+  analysis.toml                 # explicit include list; same public entry path
+  config/
+    analysis.toml               # analysis identity, paths, merge
+    samples.toml                # ordered sample inventory
+    data_quality.toml           # Golden JSON, triggers, stream priority
+    objects.toml                # ordered objects and cleaning
+    selection.toml              # variables, output, weights, ordered cuts/regions
+    histograms.toml             # ordered histograms
+    corrections.toml            # correction hook and terms
+    systematics.toml            # shape variations
+    fitplot.toml                # fit and plotting
+    profiles.toml               # switches and all existing profiles
+```
+
+- `include` is a **top-level list of literal, nonempty file paths**. No glob,
+  environment expansion or executable configuration. Nested includes are allowed
+  (maximum depth 64): visit children depth-first in declared order, then merge the
+  declaring file. Provenance records entry-first DFS declaration order.
+- Include paths are relative to the **file declaring the include**. All analysis
+  asset paths (samples, Golden JSON, corrections, etc.) remain relative to the
+  **entry directory**, not the fragment directory. Moving a section into
+  `config/` does not change path interpretation. Workdir rules are unchanged.
+- Tables combine recursively, but **duplicate leaves are errors**, even if equal.
+  An array is one leaf: keep each complete ordered array (samples, objects, cuts,
+  histograms, weights, correction terms) in one file. Includes never append, sort,
+  deduplicate or silently overwrite arrays.
+- Profiles may span disjoint keys, but repeating the same profile leaf across
+  fragments is an error. Selecting one profile then uses existing deep-table-merge
+  and **whole-array-replacement** rules below; profiles do not inherit from each
+  other. Schema and execution-relation checks run **after** composition, including
+  inactive profiles.
+- Missing files, non-file includes, cycles, repeated files (including symlink and
+  hardlink aliases), malformed lists and collisions fail before data work.
+  Diagnostics identify source files and keys. Captured bytes and symlink targets
+  are rechecked after composition; this detects ordinary concurrent edits but is
+  not a filesystem lock against adversarial writers.
+- `parse_analysis(dict)` remains an already-composed dictionary API. Custom tools
+  should use `read_analysis_source(path).raw`, not `TOML.parsefile(entry)`.
+  `load_analysis_source(path)` returns typed `config` and separate `provenance`.
+
+### Provenance and cache identity
+
+`include` and loader metadata never enter `cfg.raw` or scientific `section_hash`
+values. Splitting without scientific changes preserves section hashes and array
+order. Source-code edits still invalidate `code_hash` normally.
+
+For one-file configs the provenance SHA remains the historical SHA256 of that
+file's bytes (also with `include=[]`). For multiple files,
+`cascade-config-closure-v1` hashes its header and, in entry-first DFS order,
+length-framed entry-relative dependency paths and their byte SHA256. Comments,
+**inactive-profile** edits, include-list/order changes and fragment removal change
+closure identity even when active science is unchanged. The separate dependency
+list records absolute paths, real paths and byte SHA256.
+
+Batch plan/load freeze and recheck the closure, preventing old batches from
+running a changed include tree. Legacy single-file manifests remain accepted;
+legacy root-only manifests cannot authorize multi-file configs. No-checkpoint
+provenance captures the closure before data work and verifies it again before
+publication, instead of hashing only end-of-run entry bytes. Reduced exports
+record/check the same source closure. Precompile workloads register every
+transitive TOML dependency. These hashes exclude calibration/Golden JSON contents,
+dataset files and environment; their independent contracts still apply. No new
+physics or dataset validation is implied.
 
 ## Resolution and options
 

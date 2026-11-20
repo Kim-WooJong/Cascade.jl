@@ -18,7 +18,7 @@ struct FakeSource <: AbstractEventSource end
     raw=Dict("profiles"=>Dict("wide"=>Dict("execution"=>Dict("column_readers"=>4))))
     @test column_readers(resolve_config(raw;profile="wide")) == 4
     root=normpath(joinpath(@__DIR__,"../.."))
-    base=TOML.parsefile(joinpath(root,"analyses/ttbar_emu/analysis.toml"))
+    base=read_analysis_source(joinpath(root,"analyses/ttbar_emu/analysis.toml")).raw
     a=parse_analysis(base;dir=root,profile="baseline")
     wide=deepcopy(base); wide["execution"]=Dict("column_readers"=>4)
     b=parse_analysis(wide;dir=root,profile="baseline")

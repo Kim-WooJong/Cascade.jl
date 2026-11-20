@@ -34,6 +34,7 @@ include("checkpoint_options.jl")
 include("event_ranges.jl")
 include("validate_keys.jl")
 include("parse_analysis.jl")
+include("config_source.jl")
 include("load_analysis.jl")
 include("shape_variations.jl")
 include("validate_shape_variations.jl")
@@ -51,7 +52,8 @@ include("sample_by_name.jl")
 
 export event_range_selection, memoization_options, stable_selection_kernels, checkpoints_enabled, windowed_selection, windowed_reusable_decoder, memory_handoff, streaming_selection_options, decode_options, column_readers, AnalysisConfig, SampleConfig, ObjectConfig, CutConfig, RegionConfig,
        HistogramConfig, VariationConfig, TriggerConfig, DataQualityConfig,
-       parse_binning, substitute_paths, parse_analysis, load_analysis,
+       parse_binning, substitute_paths, parse_analysis, load_analysis, load_analysis_source,
+       read_analysis_source, config_provenance, verify_config_sources, verify_config_provenance, verify_config_manifest,
        counting_readiness, require_counting_ready, reduced_skim_options, theory_extraction, validate_theory_manifest, theory_weights, validate_analysis, canonical_hash, section_hash, sample_by_name,
        resolve_config, validate_keys, is_mc, is_data, ShapeVariationConfig, shape_variations, validate_shape_variations
 

@@ -1,0 +1,107 @@
+# ---------------------------------------------------------------- switches
+[options]
+default_profile = "baseline"
+corrections = false             # true, false or a list of correction names
+shape_variations = false        # true, false or a list of shape variation names
+fit = false
+# jer_nominal = false           # override nominal JER smearing of every JER entry
+
+[profiles.baseline]
+
+[profiles.sf.options]
+corrections = true
+
+[profiles.phase2.options]
+corrections = true
+shape_variations = true
+fit = true
+jer_nominal = false             # technical demo: unsmeared nominal
+
+[profiles.jer_candidate.options]
+corrections = true
+shape_variations = true
+fit = true
+jer_nominal = true              # consistently smeared nominal (see JER_READINESS.md)
+
+# Optional bounded-example convention; see docs/THEORY_WEIGHTS.md.
+# No PDF assumption: LHEPdfWeight is absent in the inspected TT input.
+[profiles.theory_example.options]
+corrections = false
+shape_variations = false
+fit = false
+
+[[profiles.theory_example.theory_weights]]
+name = "scale"
+family = "scale"
+branch = "LHEScaleWeight"
+samples = ["TTto2L2Nu"]
+expected_length = 9
+indices = [1, 2, 4, 6, 8, 9]
+normalization = "relative"
+reduction = "envelope"
+convention = "Inspected NanoAOD title: 9 muR/muF members; exclude opposite extremes 3/7; docs/THEORY_WEIGHTS.md"
+
+[[profiles.theory_example.theory_weights]]
+name = "ISR"
+family = "ps"
+branch = "PSWeight"
+samples = ["TTto2L2Nu"]
+expected_length = 4
+indices = [1, 3]
+normalization = "relative"
+reduction = "pair"
+convention = "Inspected PS title: ISR scale doubled/halved, FSR fixed; docs/THEORY_WEIGHTS.md"
+
+[[profiles.theory_example.theory_weights]]
+name = "FSR"
+family = "ps"
+branch = "PSWeight"
+samples = ["TTto2L2Nu"]
+expected_length = 4
+indices = [2, 4]
+normalization = "relative"
+reduction = "pair"
+convention = "Inspected PS title: FSR scale doubled/halved, ISR fixed; docs/THEORY_WEIGHTS.md"
+
+# Opt-in combined technical integration, not a final physics prescription.
+# Existing profiles/defaults are unchanged; arrays replace under profile merge,
+# so the inspected TT-only theory declarations are repeated verbatim below.
+# Bounded real validation: docs/TTBAR_INTEGRATION_VALIDATION.md.
+[profiles.integration_small.options]
+corrections = true
+shape_variations = true
+fit = true
+jer_nominal = true
+
+[[profiles.integration_small.theory_weights]]
+name = "scale"
+family = "scale"
+branch = "LHEScaleWeight"
+samples = ["TTto2L2Nu"]
+expected_length = 9
+indices = [1, 2, 4, 6, 8, 9]
+normalization = "relative"
+reduction = "envelope"
+convention = "Inspected NanoAOD title: 9 muR/muF members; exclude opposite extremes 3/7; docs/THEORY_WEIGHTS.md"
+
+[[profiles.integration_small.theory_weights]]
+name = "ISR"
+family = "ps"
+branch = "PSWeight"
+samples = ["TTto2L2Nu"]
+expected_length = 4
+indices = [1, 3]
+normalization = "relative"
+reduction = "pair"
+convention = "Inspected PS title: ISR scale doubled/halved, FSR fixed; docs/THEORY_WEIGHTS.md"
+
+[[profiles.integration_small.theory_weights]]
+name = "FSR"
+family = "ps"
+branch = "PSWeight"
+samples = ["TTto2L2Nu"]
+expected_length = 4
+indices = [2, 4]
+normalization = "relative"
+reduction = "pair"
+convention = "Inspected PS title: FSR scale doubled/halved, ISR fixed; docs/THEORY_WEIGHTS.md"

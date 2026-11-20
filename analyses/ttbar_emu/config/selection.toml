@@ -1,0 +1,59 @@
+# ---------------------------------------------------------------- event selection
+[variables]
+njet = "length(jets)"
+mll = "mass_massless(electrons.pt[1], electrons.eta[1], electrons.phi[1], muons.pt[1], muons.eta[1], muons.phi[1])"
+# Selected-lepton kinematics for the scale factors (kept events have exactly one
+# electron and one muon). The SC eta is summed in NanoAOD (Float32) precision.
+mu1_pt = "muons.pt[1]"
+mu1_eta = "muons.eta[1]"
+e1_pt = "electrons.pt[1]"
+e1_eta_sc = "electrons.eta[1] + electrons.deltaEtaSC[1]"
+
+[output]
+columns = ["mu1_pt", "mu1_eta", "e1_pt", "e1_eta_sc"]
+
+[weights]
+mc = ["genWeight"]
+data = []
+
+[[cuts]]
+name = "lumimask"
+expr = "lumimask"               # run range + Golden JSON
+only = "data"
+
+[[cuts]]
+name = "trigger"
+expr = "trigger"
+
+[[cuts]]
+name = "two_leptons"
+expr = "length(electrons) == 1 && length(muons) == 1"
+
+[[cuts]]
+name = "extra_lepton_veto"
+expr = "length(veto_electrons) == 1 && length(veto_muons) == 1"
+
+[[cuts]]
+name = "opposite_sign"
+expr = "electrons.charge[1] * muons.charge[1] < 0"
+
+[[cuts]]
+name = "mll"
+expr = "mll > 20.0"             # [P] Sec.4
+
+[[cuts]]
+name = "njet_ge1"
+expr = "njet >= 1"
+
+[[cuts]]
+name = "njet_ge2"
+expr = "njet >= 2"              # [P] Sec.7 counting
+
+[[regions]]
+name = "emu_ge1j"               # control plots, combined-fit e-mu category
+after = "njet_ge1"
+
+[[regions]]
+name = "emu_ge2j"               # cross-section counting
+after = "njet_ge2"
+

@@ -387,7 +387,7 @@ plan. A positive Int restricts to the first max_windows common-boundary windows
 The caller owns prepared.decode and must release it before closing src.
 """
 function prepare_reusable_windowed_selection(sel, src, sample, options; lumimask=nothing,
-        object_collections=nothing, max_windows=nothing, shared_offsets::Bool=false, reuse_buffers::Bool=false, reuse_accounting::Bool=false)
+        object_collections=nothing, max_windows=nothing, shared_offsets::Bool=false, reuse_buffers::Bool=false, reuse_accounting::Bool=false, reuse_raw::Bool=false)
     reuse_accounting && !reuse_buffers && return nothing, "reuse_window_accounting_requires_buffer_reuse"
     reuse_buffers && !isempty(sel.variable_nodes) && return nothing, "reuse_window_buffers_variable_memo_unsupported"
     max_windows === nothing || (max_windows isa Int && max_windows >= 1) ||
@@ -409,7 +409,7 @@ function prepare_reusable_windowed_selection(sel, src, sample, options; lumimask
         length(full.windows) >= max_windows || return nothing, "fewer_than_required_windows"
         reader = EventIO.stream_window_prefix(full, max_windows)
     end
-    decode = EventIO.StreamDecodeState(reader; share_window_offsets=shared_offsets)
+    decode = EventIO.StreamDecodeState(reader; share_window_offsets=shared_offsets, reuse_destinations=reuse_raw)
     handed_over = false
     try
         reason = EventIO.reusable_stream_admission(reader, decode)
@@ -417,6 +417,10 @@ function prepare_reusable_windowed_selection(sel, src, sample, options; lumimask
         isempty(reason) && EventIO.decode_source_identity(src; expected=identity)
         # Includes the opt-in shared-offset proof metadata (identical to the default otherwise).
         extra = EventIO.reusable_reservation_bytes(reader, decode)
+        if reuse_raw
+            rawreserve = EventIO.reusable_destination_reservation(reader)
+            extra = merge(extra,(total=Base.checked_add(extra.total,rawreserve),))
+        end
         spec = nothing
         if isempty(reason) && reuse_buffers
             spec, reason = window_buffer_spec(reader, sel, object_collections)
@@ -441,8 +445,8 @@ end
 """Plan, admit and reserve before Events reads (prepare_reusable_windowed_selection);
 unsupported returns a reason that the caller MUST turn into an explicit error."""
 function run_reusable_windowed_selection(sel, src, sample, options; lumimask=nothing,
-        object_collections=nothing, execution_diagnostics=Dict{String,Any}(), shared_offsets::Bool=false, reuse_buffers::Bool=false, reuse_accounting::Bool=false)
-    prepared, reason = prepare_reusable_windowed_selection(sel, src, sample, options; lumimask, object_collections, shared_offsets, reuse_buffers, reuse_accounting)
+        object_collections=nothing, execution_diagnostics=Dict{String,Any}(), shared_offsets::Bool=false, reuse_buffers::Bool=false, reuse_accounting::Bool=false, reuse_raw::Bool=false)
+    prepared, reason = prepare_reusable_windowed_selection(sel, src, sample, options; lumimask, object_collections, shared_offsets, reuse_buffers, reuse_accounting, reuse_raw)
     prepared === nothing && return nothing, reason
     reader = prepared.reader; decode = prepared.decode; identity = prepared.identity
     try

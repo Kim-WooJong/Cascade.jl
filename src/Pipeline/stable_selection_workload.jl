@@ -1,7 +1,7 @@
 # Bounded, source-tracked package-image training workload for the opt-in stable selection
 # kernels (execution.stable_selection_kernels). Executed ONLY from precompile_pipeline.jl while
-# a package image is generated. It reads exactly two tracked files (the spec below and the
-# analysis TOML it names; both are include_dependency'd, so editing either rebuilds the
+# a package image is generated. It reads the tracked spec below and the
+# complete analysis TOML include closure; include_dependency tracks each, so editing any rebuilds the
 # image), constructs the selection with the production compile_selection, replays the staged
 # zero-event column order with empty typed columns (Selection.stable_selection_training!) and
 # declares the reusable-window call sites with the resulting concrete types. No input glob,

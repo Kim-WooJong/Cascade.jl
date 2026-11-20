@@ -1,0 +1,13 @@
+[analysis]
+name = "ttbar_emu"
+lumi_pb = 1210.0                # [P] Sec.1, 3: 1.21 fb^-1
+workdir = "cascade_out/ttbar_emu"
+
+[paths]
+mc = "~/nano_slim/mc/Run3Summer22NanoAODv12"
+data = "~/nano_slim/data/Run2022C"
+jsonpog = "/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG"
+
+[merge]
+yield_variable = "njet"         # every selected event fills it once (overflow in last bin)
+

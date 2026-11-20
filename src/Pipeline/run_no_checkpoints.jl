@@ -110,6 +110,10 @@ end
 
 function _run_no_checkpoints_traced(cfg, workdir, samples, opts)
     started = time()
+    # Capture and compare before data work; do not label end-of-run bytes as inputs.
+    source = load_analysis_source(opts.config; profile = opts.profile)
+    source.config.raw == cfg.raw && source.config.dir == cfg.dir || error("configuration changed before no-checkpoint run")
+    config_source = source.provenance
     steps = opts.steps
     reasons = no_checkpoints_unsupported(cfg, samples, steps)
     isempty(reasons) || throw(no_checkpoints_error(reasons))
@@ -262,6 +266,7 @@ function _run_no_checkpoints_traced(cfg, workdir, samples, opts)
             runs = Dict(:skim => length(samples), :select => nfiles, :correct => nfiles, :histogram => nfiles,
                         :merge => 1, :systematics => 1, :fit => 1, :plot => 1)
             timing["total_wall_seconds"] = time() - started
+            verify_config_provenance(opts.config, config_source)
             provenance = Dict{String,Any}("schema" => 1, "mode" => "no_checkpoints",
                 "checkpoints" => false, "resume" => false, "fresh_compute" => true,
                 "per_file_checkpoint_reads" => 0, "per_file_checkpoint_writes" => 0,
@@ -271,9 +276,9 @@ function _run_no_checkpoints_traced(cfg, workdir, samples, opts)
                     "No per-file skim/select/correct/histogram artifact, metadata, cache or temporary was read or written; " *
                     "existing workdir content was not read, modified or deleted. These outputs carry no cache keys and cannot be resumed.",
                 "run_id" => run_id, "published_dir" => final_dir, "workdir" => workdir,
-                "config" => abspath(opts.config), "config_sha256" => bytes2hex(open(sha256, opts.config)),
-                "config_sha256_scope" => "bytes of the main analysis TOML only, re-read when provenance is written; " *
-                    "correction/golden/luminosity payloads, input files and environment are NOT covered by this hash",
+                "config" => abspath(opts.config), "config_sha256" => config_source["sha256"],
+                "config_sha256_scope" => config_source["scope"],
+                "config_dependencies" => config_source["dependencies"],
                 "profile" => opts.profile, "steps" => String.(steps), "samples" => [s.name for s in samples],
                 "max_files" => opts.max_files, "force_flag" => opts.force,
                 "force_note" => "no effect: every stage is always computed fresh",
